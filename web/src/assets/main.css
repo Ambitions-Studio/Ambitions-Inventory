@@ -1,0 +1,49 @@
+@import './base.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --charcoal-elegant-gradient: linear-gradient(
+    to bottom right,
+    rgb(15 23 42 / 0.95) 30%,
+    rgb(31 41 55 / 0.98) 50%,
+    rgb(15 23 42 / 0.95) 70%
+  );
+  --charcoal-elegant-gray-gradient: linear-gradient(
+    to bottom right,
+    rgb(107 114 128 / 0.6),
+    rgb(75 85 99 / 0.6),
+    rgb(55 65 81 / 0.6)
+  );
+  --charcoal-elegant-forest-gradient: linear-gradient(
+    to bottom right,
+    rgb(20 83 45 / 0.85) 30%,
+    rgb(22 101 52 / 0.9) 50%,
+    rgb(20 83 45 / 0.85) 70%
+  );
+  --charcoal-elegant-blood-gradient: linear-gradient(
+    to bottom right,
+    rgb(127 29 29 / 0.85) 30%,
+    rgb(153 27 27 / 0.9) 50%,
+    rgb(127 29 29 / 0.85) 70%
+  );
+}
+
+@layer utilities {
+  .bg-charcoal-elegant {
+    background-image: var(--charcoal-elegant-gradient) !important;
+  }
+  .bg-charcoal-elegant-gray {
+    background-image: var(--charcoal-elegant-gray-gradient) !important;
+    border: 1px solid rgb(156 163 175 / 0.5) !important;
+  }
+  .bg-charcoal-elegant-forest {
+    background-image: var(--charcoal-elegant-forest-gradient) !important;
+    border: 1px solid rgb(74 222 128 / 0.5) !important;
+  }
+  .bg-charcoal-elegant-blood {
+    background-image: var(--charcoal-elegant-blood-gradient) !important;
+    border: 1px solid rgb(248 113 113 / 0.5) !important;
+  }
+}
