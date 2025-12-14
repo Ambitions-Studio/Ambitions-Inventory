@@ -1,10 +1,432 @@
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import InventoryGrid from '@/components/inventory/InventoryGrid.vue'
+import InventoryHotbar from '@/components/inventory/InventoryHotbar.vue'
+import GroundGrid from '@/components/inventory/GroundGrid.vue'
+import InventoryActions from '@/components/inventory/InventoryActions.vue'
+import DragGhost from '@/components/inventory/DragGhost.vue'
+import ItemContextMenu from '@/components/inventory/ItemContextMenu.vue'
+import RenameModal from '@/components/inventory/RenameModal.vue'
+import GiveModal from '@/components/inventory/GiveModal.vue'
+import SplitModal from '@/components/inventory/SplitModal.vue'
+import InspectCard from '@/components/inventory/InspectCard.vue'
+import SettingsPanel from '@/components/inventory/SettingsPanel.vue'
+import WardrobePanel from '@/components/inventory/WardrobePanel.vue'
+import { useItemDefinitionsStore } from '@/stores/itemDefinitions'
+import { useInventoryStore } from '@/stores/inventory'
+import { useHotbarStore } from '@/stores/hotbar'
+import { useGroundStore } from '@/stores/ground'
+import { useEquipmentStore } from '@/stores/equipment'
+import { useDragAndDrop, type DropResult } from '@/composables/useDragAndDrop'
+import { useItemContextMenu } from '@/composables/useItemContextMenu'
+import { MOCK_CLOTHING_ITEMS } from '@/mocks/equipment'
+import { isClothingMetadata } from '@/types/equipment'
+import type { EquipmentSlot } from '@/types/equipment'
+
+const isDevelopment = import.meta.env.DEV
+
 defineProps<{
   forceVisible?: boolean
 }>()
+
+const itemDefinitionsStore = useItemDefinitionsStore()
+const inventoryStore = useInventoryStore()
+const hotbarStore = useHotbarStore()
+const groundStore = useGroundStore()
+const equipmentStore = useEquipmentStore()
+const { onDrop } = useDragAndDrop()
+
+const INDEX_TO_SLOT: EquipmentSlot[] = [
+  'hat', 'glasses', 'mask', 'earring', 'helmet',
+  'jacket', 'tshirt', 'pants', 'shoes', 'gloves',
+  'armor', 'bag', 'necklace', 'watch', 'bracelet'
+]
+const {
+  itemLabel,
+  currentQuantity,
+  currentSlotData,
+  currentDefinition,
+  nearbyPlayers,
+  isRenameModalOpen,
+  isGiveModalOpen,
+  isSplitModalOpen,
+  isInspectCardOpen,
+  inspectAnchorPosition,
+  cancelAction,
+  confirmRename,
+  confirmGive,
+  confirmSplit
+} = useItemContextMenu()
+
+const isSettingsOpen = ref(false)
+const isWardrobeOpen = ref(false)
+
+const handleOpenSettings = () => {
+  isSettingsOpen.value = true
+  isWardrobeOpen.value = false
+}
+
+const handleCloseSettings = () => {
+  isSettingsOpen.value = false
+}
+
+const handleOpenWardrobe = () => {
+  isWardrobeOpen.value = true
+  isSettingsOpen.value = false
+}
+
+const handleCloseWardrobe = () => {
+  isWardrobeOpen.value = false
+}
+
+const backgroundStyle = computed(() => {
+  if (isWardrobeOpen.value) {
+    return {
+      background: `linear-gradient(
+        to right,
+        rgba(15, 23, 42, 1) 0%,
+        rgba(15, 23, 42, 0.7) 10%,
+        rgba(15, 23, 42, 0.2) 25%,
+        transparent 40%,
+        transparent 100%
+      )`
+    }
+  }
+  return {
+    background: `linear-gradient(
+      to right,
+      rgba(15, 23, 42, 1) 0%,
+      rgba(15, 23, 42, 0.7) 10%,
+      rgba(15, 23, 42, 0.2) 25%,
+      transparent 40%,
+      transparent 60%,
+      rgba(15, 23, 42, 0.2) 75%,
+      rgba(15, 23, 42, 0.7) 90%,
+      rgba(15, 23, 42, 1) 100%
+    )`
+  }
+})
+
+const getStoreForSource = (source: string) => {
+  switch (source) {
+    case 'inventory': return inventoryStore
+    case 'hotbar': return hotbarStore
+    case 'ground': return groundStore
+    default: return null
+  }
+}
+
+const handleDrop = (result: DropResult) => {
+  if (result.toSource === 'equipment') {
+    handleDropToEquipment(result)
+    return
+  }
+
+  if (result.fromSource === 'equipment') {
+    handleDropFromEquipment(result)
+    return
+  }
+
+  const fromStore = getStoreForSource(result.fromSource)
+  const toStore = getStoreForSource(result.toSource)
+
+  if (!fromStore || !toStore) return
+
+  const fromSlot = fromStore.slots[result.fromIndex]
+  const toSlot = toStore.slots[result.toIndex]
+
+  if (fromSlot && toSlot && fromSlot.name === toSlot.name) {
+    toSlot.quantity += fromSlot.quantity
+    fromStore.slots[result.fromIndex] = null
+    return
+  }
+
+  if (result.fromSource === result.toSource) {
+    fromStore.swapSlots(result.fromIndex, result.toIndex)
+  } else {
+    fromStore.slots[result.fromIndex] = toSlot ?? null
+    toStore.slots[result.toIndex] = fromSlot ?? null
+  }
+}
+
+const handleDropToEquipment = (result: DropResult) => {
+  const fromStore = getStoreForSource(result.fromSource)
+  if (!fromStore) return
+
+  const fromSlot = fromStore.slots[result.fromIndex]
+  if (!fromSlot || !fromSlot.metadata) return
+
+  if (!isClothingMetadata(fromSlot.metadata)) return
+
+  const targetSlotId = INDEX_TO_SLOT[result.toIndex]
+  if (!targetSlotId) return
+
+  if (fromSlot.metadata.equipmentSlot !== targetSlotId) return
+
+  const currentEquipped = equipmentStore.getItem(targetSlotId)
+
+  const item = {
+    id: fromSlot.id,
+    name: fromSlot.name,
+    quantity: fromSlot.quantity,
+    metadata: fromSlot.metadata,
+  }
+
+  const { result: equipResult } = equipmentStore.equip(item, targetSlotId, true)
+
+  if (equipResult.success) {
+    fromStore.slots[result.fromIndex] = null
+
+    if (currentEquipped) {
+      const definition = {
+        name: currentEquipped.name,
+        label: currentEquipped.metadata.customLabel ?? currentEquipped.name,
+        weight: 500,
+        type: 'item' as const,
+        isUnique: true,
+        isUseable: true,
+      }
+      inventoryStore.addItem(definition, 1, currentEquipped.metadata as unknown as Record<string, unknown>)
+    }
+  }
+}
+
+const handleDropFromEquipment = (result: DropResult) => {
+  const toStore = getStoreForSource(result.toSource)
+  if (!toStore) return
+
+  const fromSlotId = INDEX_TO_SLOT[result.fromIndex]
+  if (!fromSlotId) return
+
+  const equippedItem = equipmentStore.getItem(fromSlotId)
+  if (!equippedItem) return
+
+  const { result: unequipResult } = equipmentStore.unequip(fromSlotId)
+
+  if (unequipResult.success) {
+    const toSlot = toStore.slots[result.toIndex]
+
+    if (toSlot) {
+      const emptyIndex = toStore.slots.findIndex((s: unknown) => s === null)
+      if (emptyIndex !== -1) {
+        toStore.slots[emptyIndex] = {
+          id: equippedItem.id,
+          name: equippedItem.name,
+          quantity: 1,
+          metadata: equippedItem.metadata as unknown as Record<string, unknown>,
+        }
+      }
+    } else {
+      toStore.slots[result.toIndex] = {
+        id: equippedItem.id,
+        name: equippedItem.name,
+        quantity: 1,
+        metadata: equippedItem.metadata as unknown as Record<string, unknown>,
+      }
+    }
+  }
+}
+
+onDrop(handleDrop)
+
+onMounted(async () => {
+  await itemDefinitionsStore.load()
+  inventoryStore.initSlots(40)
+  hotbarStore.initSlots()
+  groundStore.initSlots(30)
+
+  if (isDevelopment) {
+    const allDefinitions = itemDefinitionsStore.getAllDefinitions()
+
+    for (const definition of allDefinitions) {
+      const quantity = definition.isUnique ? 1 : 10
+
+      if (definition.name === 'pistol') {
+        inventoryStore.addItem(definition, quantity, {
+          serial: 'AK847291',
+          ammo: 12
+        })
+      } else {
+        inventoryStore.addItem(definition, quantity)
+      }
+    }
+
+    for (const clothingItem of MOCK_CLOTHING_ITEMS) {
+      const definition = {
+        name: clothingItem.name,
+        label: clothingItem.label,
+        weight: 500,
+        type: 'item' as const,
+        isUnique: true,
+        isUseable: true,
+      }
+      itemDefinitionsStore.addDefinition(definition)
+      inventoryStore.addItem(definition, 1, clothingItem.metadata as unknown as Record<string, unknown>)
+    }
+
+    console.info(`[Inventory] DEV: Loaded ${allDefinitions.length} items + ${MOCK_CLOTHING_ITEMS.length} clothing items`)
+  }
+})
 </script>
 
 <template>
-  <div v-if="forceVisible" class="inventory-container">
-  </div>
+  <Transition name="inventory">
+    <div
+      v-if="forceVisible"
+      class="fixed inset-0 w-full h-full z-10 flex items-center justify-between transition-all duration-300"
+      :style="backgroundStyle"
+    >
+      <div class="ml-32 flex flex-col gap-3 inventory-left">
+        <InventoryGrid />
+        <InventoryHotbar />
+      </div>
+      <div class="flex-1 flex items-center justify-center inventory-right pointer-events-none">
+        <Transition name="panel-switch" mode="out-in">
+          <div v-if="!isSettingsOpen && !isWardrobeOpen" key="ground" class="flex flex-col gap-3 mr-32 pointer-events-auto">
+            <InventoryActions @open-settings="handleOpenSettings" @open-wardrobe="handleOpenWardrobe" />
+            <GroundGrid />
+          </div>
+          <SettingsPanel v-else-if="isSettingsOpen" key="settings" :is-open="isSettingsOpen" @close="handleCloseSettings" />
+          <WardrobePanel v-else key="wardrobe" @close="handleCloseWardrobe" />
+        </Transition>
+      </div>
+
+      <DragGhost />
+      <ItemContextMenu />
+      <RenameModal
+        :is-open="isRenameModalOpen"
+        :item-label="itemLabel"
+        @confirm="confirmRename"
+        @cancel="cancelAction"
+      />
+      <GiveModal
+        :is-open="isGiveModalOpen"
+        :item-label="itemLabel"
+        :players="nearbyPlayers"
+        :max-quantity="currentQuantity"
+        @confirm="confirmGive"
+        @cancel="cancelAction"
+      />
+      <SplitModal
+        :is-open="isSplitModalOpen"
+        :item-label="itemLabel"
+        :max-quantity="currentQuantity"
+        @confirm="confirmSplit"
+        @cancel="cancelAction"
+      />
+      <InspectCard
+        :is-open="isInspectCardOpen"
+        :slot-data="currentSlotData"
+        :definition="currentDefinition"
+        :anchor-x="inspectAnchorPosition.x"
+        :anchor-y="inspectAnchorPosition.y"
+        @close="cancelAction"
+      />
+    </div>
+  </Transition>
 </template>
+
+<style scoped>
+.inventory-enter-active {
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inventory-enter-active .inventory-left {
+  animation: slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.inventory-enter-active .inventory-right {
+  animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.inventory-leave-active {
+  transition: opacity 0.25s ease-in;
+}
+
+.inventory-leave-active .inventory-left {
+  animation: slideOutLeft 0.25s ease-in forwards;
+}
+
+.inventory-leave-active .inventory-right {
+  animation: slideOutRight 0.25s ease-in forwards;
+}
+
+.inventory-enter-from,
+.inventory-leave-to {
+  opacity: 0;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+.panel-switch-enter-active {
+  animation: panelEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.panel-switch-leave-active {
+  animation: panelLeave 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes panelLeave {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+}
+</style>
