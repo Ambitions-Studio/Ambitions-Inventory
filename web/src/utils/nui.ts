@@ -22,10 +22,7 @@ nuiClient.interceptors.response.use(
   }
 )
 
-export interface NuiCallbackResponse<T = unknown> {
-  data: T
-  status: number
-}
+export type { NuiCallbackResponse } from '@/types/nui'
 
 /**
  * Send a NUI callback and wait for a response from Lua
