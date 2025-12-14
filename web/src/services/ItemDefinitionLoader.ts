@@ -6,10 +6,26 @@ const isDevelopment = import.meta.env.DEV
 
 export async function loadItemDefinitions(): Promise<Record<string, ItemDefinition>> {
   if (isDevelopment) {
-    console.info(`[ItemDefinitions] Loaded ${Object.keys(mockItems).length} mock items`)
+    console.info(`[ItemDefinitions] DEV: Loaded ${Object.keys(mockItems).length} mock items`)
     return mockItems
   }
 
   const items = await sendNuiCallback<undefined, Record<string, ItemDefinition>>('getItemDefinitions')
+
+  if (items) {
+    const itemNames = Object.keys(items)
+    console.info(`[ItemDefinitions] PROD: Loaded ${itemNames.length} items from Lua`)
+    console.table(
+      itemNames.map((name) => ({
+        name,
+        label: items[name].label,
+        type: items[name].type,
+        weight: items[name].weight
+      }))
+    )
+  } else {
+    console.warn('[ItemDefinitions] PROD: Failed to load items from Lua')
+  }
+
   return items ?? {}
 }

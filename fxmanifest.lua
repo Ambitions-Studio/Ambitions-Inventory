@@ -17,7 +17,9 @@ lua54 'yes'
 shared_scripts {
     '@Ambitions/init.lua',
 
-    'config/*.lua'
+    'config/*.lua',
+
+    'shared/*.lua'
 }
 
 server_scripts {

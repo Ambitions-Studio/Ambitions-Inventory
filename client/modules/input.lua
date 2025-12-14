@@ -26,3 +26,11 @@ RegisterNUICallback('closeInventory', function(_, cb)
     CloseInventory()
     cb('ok')
 end)
+
+CreateThread(function()
+    while true do
+        Wait(0)
+        HideHudComponentThisFrame(19)
+        HideHudComponentThisFrame(20)
+    end
+end)
