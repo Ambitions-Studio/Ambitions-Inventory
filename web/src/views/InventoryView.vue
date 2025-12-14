@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { sendNuiEvent } from '@/utils/nui'
 import InventoryGrid from '@/components/inventory/InventoryGrid.vue'
 import InventoryHotbar from '@/components/inventory/InventoryHotbar.vue'
 import GroundGrid from '@/components/inventory/GroundGrid.vue'
@@ -24,10 +25,13 @@ import { isClothingMetadata } from '@/types/equipment'
 import type { EquipmentSlot } from '@/types/equipment'
 
 const isDevelopment = import.meta.env.DEV
+const isVisible = ref(false)
 
-defineProps<{
+const props = defineProps<{
   forceVisible?: boolean
 }>()
+
+const shouldShow = computed(() => props.forceVisible || isVisible.value)
 
 const itemDefinitionsStore = useItemDefinitionsStore()
 const inventoryStore = useInventoryStore()
@@ -230,6 +234,19 @@ const handleDropFromEquipment = (result: DropResult) => {
 onDrop(handleDrop)
 
 onMounted(async () => {
+  window.addEventListener('message', (event) => {
+    if (event.data.action === 'toggleInventory') {
+      isVisible.value = event.data.isOpen
+    }
+  })
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && isVisible.value) {
+      isVisible.value = false
+      sendNuiEvent('closeInventory')
+    }
+  })
+
   await itemDefinitionsStore.load()
   inventoryStore.initSlots(40)
   hotbarStore.initSlots()
@@ -272,7 +289,7 @@ onMounted(async () => {
 <template>
   <Transition name="inventory">
     <div
-      v-if="forceVisible"
+      v-if="shouldShow"
       class="fixed inset-0 w-full h-full z-10 flex items-center justify-between transition-all duration-300"
       :style="backgroundStyle"
     >
