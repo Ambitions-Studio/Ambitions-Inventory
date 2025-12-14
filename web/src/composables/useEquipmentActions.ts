@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import type { EquipmentSlot, EquippedItem, EquipResult } from '@/types/equipment'
+import type { EquipmentSlot, EquippedItem } from '@/types/equipment'
 import { EQUIPMENT_SLOT_MAP, isClothingMetadata } from '@/types/equipment'
 import type { InventoryItem } from '@/services/EquipmentService'
 import { useEquipmentStore } from '@/stores/equipment'

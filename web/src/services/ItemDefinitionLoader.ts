@@ -16,12 +16,15 @@ export async function loadItemDefinitions(): Promise<Record<string, ItemDefiniti
     const itemNames = Object.keys(items)
     console.info(`[ItemDefinitions] PROD: Loaded ${itemNames.length} items from Lua`)
     console.table(
-      itemNames.map((name) => ({
-        name,
-        label: items[name].label,
-        type: items[name].type,
-        weight: items[name].weight
-      }))
+      itemNames.map((name) => {
+        const item = items[name]
+        return {
+          name,
+          label: item?.label,
+          type: item?.type,
+          weight: item?.weight
+        }
+      })
     )
   } else {
     console.warn('[ItemDefinitions] PROD: Failed to load items from Lua')
