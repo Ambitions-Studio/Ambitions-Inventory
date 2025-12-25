@@ -1,3 +1,12 @@
+RegisterNetEvent('ambitions-inventory:loadInventory', function(data)
+    SendNUIMessage({
+        action = 'loadInventory',
+        maxSlots = data.maxSlots,
+        maxWeight = data.maxWeight,
+        items = data.items
+    })
+end)
+
 RegisterNUICallback('getInventoryConfig', function(_, cb)
     cb({
         slotsNumber = InventoryConfig.playerInventory.slotsNumber,

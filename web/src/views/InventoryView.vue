@@ -259,6 +259,16 @@ onMounted(async () => {
     if (event.data.action === 'removeSlot') {
       inventoryStore.setSlot(event.data.slot - 1, null)
     }
+    if (event.data.action === 'loadInventory') {
+      const { maxSlots, maxWeight, items } = event.data
+      inventoryStore.initSlots(maxSlots, maxWeight)
+      for (const [slot, item] of Object.entries(items)) {
+        const slotIndex = parseInt(slot) - 1
+        if (item) {
+          inventoryStore.setSlot(slotIndex, item as { name: string; count: number; metadata?: Record<string, unknown> })
+        }
+      }
+    }
   })
 
   window.addEventListener('keydown', (event) => {
