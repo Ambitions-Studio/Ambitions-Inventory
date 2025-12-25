@@ -13,6 +13,7 @@ local function getInventoryManagerFromSession(sessionId)
         return nil
     end
 
+    amb.print.debug('[getInventoryManagerFromSession] amb.cache address: ' .. tostring(amb.cache))
     amb.print.debug('[getInventoryManagerFromSession] sessionId: ' .. tostring(sessionId))
     amb.print.debug('[getInventoryManagerFromSession] player address: ' .. tostring(player))
     amb.print.debug('[getInventoryManagerFromSession] character address: ' .. tostring(character))
