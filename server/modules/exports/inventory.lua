@@ -115,6 +115,8 @@ local function AddItem(sessionId, itemName, count, slot, metadata)
     local items = inventoryManager.getItems()
     local maxSlots = inventoryManager.getMaxSlots()
 
+    amb.print.debug('[AddItem DEBUG] Items table address: ' .. tostring(items))
+
     local itemWeight = itemDef.weight * count
     local currentWeight = getTotalWeight(inventoryManager)
     local maxWeight = inventoryManager.getMaxWeight()
