@@ -109,7 +109,7 @@ const filteredMetadata = computed(() => {
             <div class="w-20 h-20 flex-shrink-0 rounded-lg bg-slate-700/50 flex items-center justify-center">
               <img
                 v-if="definition.image"
-                :src="`/images/${definition.image}`"
+                :src="`images/${definition.image}`"
                 :alt="definition.label"
                 class="w-16 h-16 object-contain drop-shadow-lg"
               />

@@ -44,7 +44,7 @@ const displayLabel = computed(() => {
     <template v-if="slotData && definition">
       <img
         v-if="definition.image"
-        :src="`/images/${definition.image}`"
+        :src="`images/${definition.image}`"
         :alt="definition.label"
         class="w-14 h-14 object-contain drop-shadow-lg pointer-events-none select-none"
         draggable="false"

@@ -25,7 +25,7 @@ const definition = computed(() => {
       <div class="w-full h-full rounded-lg bg-gradient-to-b from-slate-700/90 to-slate-800/90 border-2 border-solid border-slate-300 shadow-[0_0_20px_rgba(148,163,184,0.3)] flex items-center justify-center">
         <img
           v-if="definition.image"
-          :src="`/images/${definition.image}`"
+          :src="`images/${definition.image}`"
           :alt="definition.label"
           class="w-14 h-14 object-contain drop-shadow-lg"
         />
