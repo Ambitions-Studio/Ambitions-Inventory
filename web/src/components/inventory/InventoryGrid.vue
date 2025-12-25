@@ -23,8 +23,6 @@ const {
   handleMouseMove
 } = useItemHover()
 
-const MAX_WEIGHT = 50000
-
 const scrollContainer = ref<HTMLElement | null>(null)
 const scrollTop = ref(0)
 const scrollHeight = ref(1)
@@ -43,7 +41,7 @@ const currentWeight = computed(() => {
 })
 
 const weightPercentage = computed(() => {
-  return WeightService.getWeightPercentage(currentWeight.value, MAX_WEIGHT)
+  return WeightService.getWeightPercentage(currentWeight.value, inventoryStore.maxWeight)
 })
 
 const weightState = computed<'normal' | 'warning' | 'danger'>(() => {
@@ -96,7 +94,7 @@ onMounted(() => {
           <SectionTitle title="INVENTAIRE" size="text-3xl" font="font-black" class="tracking-wider" />
           <WeightSegmented
             :current-weight="currentWeight"
-            :max-weight="MAX_WEIGHT"
+            :max-weight="inventoryStore.maxWeight"
             :percentage="weightPercentage"
             :segments="10"
             :state="weightState"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { sendNuiEvent } from '@/utils/nui'
+import { sendNuiEvent, sendNuiCallback } from '@/utils/nui'
 import InventoryGrid from '@/components/inventory/InventoryGrid.vue'
 import InventoryHotbar from '@/components/inventory/InventoryHotbar.vue'
 import GroundGrid from '@/components/inventory/GroundGrid.vue'
@@ -238,6 +238,27 @@ onMounted(async () => {
     if (event.data.action === 'toggleInventory') {
       isVisible.value = event.data.isOpen
     }
+    if (event.data.action === 'updateMaxSlots') {
+      const success = inventoryStore.setMaxSlots(event.data.slots)
+      if (!success) {
+        sendNuiEvent('slotReductionBlocked')
+      }
+    }
+    if (event.data.action === 'updateMaxWeight') {
+      const success = inventoryStore.setMaxWeight(event.data.weight)
+      if (!success) {
+        sendNuiEvent('weightReductionBlocked')
+      }
+    }
+    if (event.data.action === 'addItem') {
+      inventoryStore.setSlot(event.data.slot - 1, event.data.item)
+    }
+    if (event.data.action === 'updateSlot') {
+      inventoryStore.updateSlot(event.data.slot - 1, event.data.item)
+    }
+    if (event.data.action === 'removeSlot') {
+      inventoryStore.setSlot(event.data.slot - 1, null)
+    }
   })
 
   window.addEventListener('keydown', (event) => {
@@ -248,7 +269,12 @@ onMounted(async () => {
   })
 
   await itemDefinitionsStore.load()
-  inventoryStore.initSlots(40)
+
+  const config = await sendNuiCallback<undefined, { slotsNumber?: number; maxWeight?: number }>('getInventoryConfig')
+  const slotsNumber = config?.slotsNumber ?? 40
+  const maxWeight = config?.maxWeight ?? 40000
+
+  inventoryStore.initSlots(slotsNumber, maxWeight)
   hotbarStore.initSlots()
   groundStore.initSlots(30)
 

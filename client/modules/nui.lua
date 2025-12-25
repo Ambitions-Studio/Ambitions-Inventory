@@ -1,7 +1,55 @@
 RegisterNUICallback('getInventoryConfig', function(_, cb)
     cb({
-        slotsNumber = InventoryConfig.playerInventory.slotsNumber
+        slotsNumber = InventoryConfig.playerInventory.slotsNumber,
+        maxWeight = InventoryConfig.playerInventory.maxWeight
     })
+end)
+
+RegisterNetEvent('ambitions-inventory:updateMaxSlots', function(slots)
+    SendNUIMessage({
+        action = 'updateMaxSlots',
+        slots = slots
+    })
+end)
+
+RegisterNetEvent('ambitions-inventory:updateMaxWeight', function(weight)
+    SendNUIMessage({
+        action = 'updateMaxWeight',
+        weight = weight
+    })
+end)
+
+RegisterNetEvent('ambitions-inventory:addItem', function(slot, itemData)
+    SendNUIMessage({
+        action = 'addItem',
+        slot = slot,
+        item = itemData
+    })
+end)
+
+RegisterNetEvent('ambitions-inventory:updateSlot', function(slot, itemData)
+    SendNUIMessage({
+        action = 'updateSlot',
+        slot = slot,
+        item = itemData
+    })
+end)
+
+RegisterNetEvent('ambitions-inventory:removeSlot', function(slot)
+    SendNUIMessage({
+        action = 'removeSlot',
+        slot = slot
+    })
+end)
+
+RegisterNUICallback('slotReductionBlocked', function(_, cb)
+    amb.ShowNotification('Inventory', 'Cannot reduce slots: some slots contain items', 'error', 5000, 'top-right')
+    cb('ok')
+end)
+
+RegisterNUICallback('weightReductionBlocked', function(_, cb)
+    amb.ShowNotification('Inventory', 'Cannot reduce max weight: current items exceed new limit', 'error', 5000, 'top-right')
+    cb('ok')
 end)
 
 RegisterNUICallback('getItemDefinitions', function(_, cb)

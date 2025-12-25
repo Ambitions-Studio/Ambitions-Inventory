@@ -1,76 +1,62 @@
 Items = {
-    ['cash'] = {
-        -- [OBLIGATOIRE] Identifiant unique de l'item (doit correspondre à la clé de la table)
-        name = 'cash',
 
-        -- [OBLIGATOIRE] Nom affiché dans l'inventaire
-        label = 'Argent',
+    ['money'] = {
+        -- [REQUIRED] Unique identifier (must match the table key)
+        name = 'money',
 
-        -- [OBLIGATOIRE] Poids de l'item (minimum: 0)
+        -- [REQUIRED] Display name in inventory
+        label = 'Money',
+
+        -- [REQUIRED] Weight in grams (minimum: 0)
         weight = 0,
 
-        -- [OPTIONNEL] Nom du fichier image (doit exister dans le dossier images) | Défaut: aucune image
-        image = 'placeholder.png',
+        -- [OPTIONAL] Image filename (must exist in images folder) | Default: no image
+        image = 'money.png',
 
-        -- [OBLIGATOIRE] Type de l'item: 'item' ou 'weapon'
+        -- [REQUIRED] Item type: 'item' or 'weapon'
         type = 'item',
 
-        -- [OPTIONNEL] Si true, l'item ne peut pas être stacké (1 seul par slot) | Défaut: false
+        -- [OPTIONAL] If true, player can only have ONE of this item in the entire inventory | Default: false
         isUnique = false,
 
-        -- [OPTIONNEL] Limite de stack par slot (nombre ou false pour illimité) | Défaut: false
-        stackLimits = 20,
+        -- [OPTIONAL] Stack limit per slot (only applies if isUnique is false) | Default: false (unlimited)
+        stackLimits = false,
 
-        -- [OPTIONNEL] Si true, l'item peut être utilisé | Défaut: false
+        -- [OPTIONAL] If true, item can be used | Default: false
         isUseable = false,
 
-        -- [OPTIONNEL] Si true, ferme l'inventaire après utilisation | Défaut: false
+        -- [OPTIONAL] If true, closes inventory after use | Default: false
         closeInventory = false,
 
-        -- [OPTIONNEL] Description affichée dans l'inventaire | Défaut: vide
-        description = "De l'argent liquide",
-
-        -- [OPTIONNEL] Restriction par job (table de noms de jobs ou false) | Défaut: false (aucune restriction)
-        job = {'police', 'sheriff'}
+        -- [OPTIONAL] Description displayed in inventory | Default: empty
+        description = 'Cash money'
     },
+
+    ['black_money'] = {
+        name = 'black_money',
+        label = 'Dirty Money',
+        weight = 0,
+        image = 'black_money.png',
+        type = 'item',
+        stackLimits = false,
+        description = 'Dirty money from illegal activities'
+    },
+
+
+    -- ============================================================================
+    -- FOOD
+    -- ============================================================================
 
     ['bread'] = {
         name = 'bread',
-        label = 'Pain',
+        label = 'Bread',
         weight = 100,
         image = 'bread.png',
         type = 'item',
-        isUnique = false,
         stackLimits = 10,
         isUseable = true,
         closeInventory = true,
-        description = 'Un bon pain frais'
-    },
-
-    ['water'] = {
-        name = 'water',
-        label = 'Bouteille d\'eau',
-        weight = 500,
-        image = 'water.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 5,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Une bouteille d\'eau fraîche'
-    },
-
-    ['cola'] = {
-        name = 'cola',
-        label = 'Cola',
-        weight = 350,
-        image = 'cola.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 10,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Une canette de cola bien fraîche'
+        description = 'Fresh bread'
     },
 
     ['burger'] = {
@@ -79,153 +65,80 @@ Items = {
         weight = 300,
         image = 'burger.png',
         type = 'item',
-        isUnique = false,
         stackLimits = 5,
         isUseable = true,
         closeInventory = true,
-        description = 'Un délicieux burger'
+        description = 'A delicious burger'
     },
 
-    ['pizza'] = {
-        name = 'pizza',
-        label = 'Pizza',
-        weight = 400,
-        image = 'pizza.png',
+    ['chocolate'] = {
+        name = 'chocolate',
+        label = 'Chocolate Bar',
+        weight = 50,
+        image = 'chocolate.png',
         type = 'item',
-        isUnique = false,
-        stackLimits = 3,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Une part de pizza'
-    },
-
-    ['donut'] = {
-        name = 'donut',
-        label = 'Donut',
-        weight = 100,
-        image = 'donut.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 12,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Un donut glacé'
-    },
-
-    ['coffee'] = {
-        name = 'coffee',
-        label = 'Café',
-        weight = 250,
-        image = 'coffee.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 5,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Un café chaud'
-    },
-
-    ['sandwich'] = {
-        name = 'sandwich',
-        label = 'Sandwich',
-        weight = 250,
-        image = 'sandwich.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 5,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Un sandwich jambon-beurre'
-    },
-
-    ['apple'] = {
-        name = 'apple',
-        label = 'Pomme',
-        weight = 150,
-        image = 'apple.png',
-        type = 'item',
-        isUnique = false,
         stackLimits = 20,
         isUseable = true,
         closeInventory = false,
-        description = 'Une pomme croquante'
+        description = 'A tasty chocolate bar'
+    },
+
+
+    -- ============================================================================
+    -- DRINKS
+    -- ============================================================================
+
+    ['water'] = {
+        name = 'water',
+        label = 'Water Bottle',
+        weight = 500,
+        image = 'water.png',
+        type = 'item',
+        stackLimits = 5,
+        isUseable = true,
+        closeInventory = true,
+        description = 'Fresh water bottle'
+    },
+
+    ['cola'] = {
+        name = 'cola',
+        label = 'Cola',
+        weight = 350,
+        image = 'cola.png',
+        type = 'item',
+        stackLimits = 10,
+        isUseable = true,
+        closeInventory = true,
+        description = 'A refreshing cola'
     },
 
     ['orange_juice'] = {
         name = 'orange_juice',
-        label = 'Jus d\'orange',
+        label = 'Orange Juice',
         weight = 300,
         image = 'orange_juice.png',
         type = 'item',
-        isUnique = false,
         stackLimits = 5,
         isUseable = true,
         closeInventory = true,
-        description = 'Un jus d\'orange pressé'
+        description = 'Fresh squeezed orange juice'
     },
 
-    ['energy_drink'] = {
-        name = 'energy_drink',
-        label = 'Boisson énergisante',
-        weight = 250,
-        image = 'energy_drink.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 10,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Booste ton énergie!'
-    },
 
-    ['bandage'] = {
-        name = 'bandage',
-        label = 'Bandage',
-        weight = 50,
-        image = 'bandage.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 20,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Un bandage pour soigner les petites blessures'
-    },
-
-    ['medikit'] = {
-        name = 'medikit',
-        label = 'Kit médical',
-        weight = 500,
-        image = 'medikit.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 3,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Un kit médical complet'
-    },
-
-    ['painkiller'] = {
-        name = 'painkiller',
-        label = 'Antidouleur',
-        weight = 20,
-        image = 'painkiller.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 30,
-        isUseable = true,
-        closeInventory = false,
-        description = 'Des cachets antidouleur'
-    },
+    -- ============================================================================
+    -- UTILITIES
+    -- ============================================================================
 
     ['phone'] = {
         name = 'phone',
-        label = 'Téléphone',
+        label = 'Phone',
         weight = 200,
         image = 'phone.png',
         type = 'item',
         isUnique = true,
         isUseable = true,
         closeInventory = true,
-        description = 'Un smartphone'
+        description = 'A smartphone'
     },
 
     ['radio'] = {
@@ -237,214 +150,30 @@ Items = {
         isUnique = true,
         isUseable = true,
         closeInventory = false,
-        description = 'Une radio portative'
+        description = 'A portable radio'
     },
 
     ['lockpick'] = {
         name = 'lockpick',
-        label = 'Crochet',
+        label = 'Lockpick',
         weight = 50,
         image = 'lockpick.png',
         type = 'item',
-        isUnique = false,
         stackLimits = 10,
         isUseable = true,
         closeInventory = true,
-        description = 'Un crochet pour ouvrir les serrures'
+        description = 'A lockpick to open locks'
     },
 
-    ['flashlight'] = {
-        name = 'flashlight',
-        label = 'Lampe torche',
-        weight = 200,
-        image = 'flashlight.png',
-        type = 'item',
-        isUnique = true,
-        isUseable = true,
-        closeInventory = false,
-        description = 'Une lampe torche puissante'
-    },
-
-    ['rope'] = {
-        name = 'rope',
-        label = 'Corde',
-        weight = 500,
-        image = 'rope.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 5,
-        isUseable = false,
-        description = 'Une corde solide'
-    },
-
-    ['duct_tape'] = {
-        name = 'duct_tape',
-        label = 'Ruban adhésif',
-        weight = 100,
-        image = 'duct_tape.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 10,
-        isUseable = false,
-        description = 'Du ruban adhésif résistant'
-    },
-
-    ['screwdriver'] = {
-        name = 'screwdriver',
-        label = 'Tournevis',
-        weight = 150,
-        image = 'screwdriver.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 5,
-        isUseable = false,
-        description = 'Un tournevis multifonction'
-    },
-
-    ['wrench'] = {
-        name = 'wrench',
-        label = 'Clé à molette',
-        weight = 300,
-        image = 'wrench.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 3,
-        isUseable = false,
-        description = 'Une clé à molette'
-    },
-
-    ['steel'] = {
-        name = 'steel',
-        label = 'Acier',
-        weight = 1000,
-        image = 'steel.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 50,
-        isUseable = false,
-        description = 'Un lingot d\'acier'
-    },
-
-    ['plastic'] = {
-        name = 'plastic',
-        label = 'Plastique',
-        weight = 200,
-        image = 'plastic.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 100,
-        isUseable = false,
-        description = 'Du plastique recyclable'
-    },
-
-    ['glass'] = {
-        name = 'glass',
-        label = 'Verre',
-        weight = 300,
-        image = 'glass.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 50,
-        isUseable = false,
-        description = 'Du verre'
-    },
-
-    ['electronic_parts'] = {
-        name = 'electronic_parts',
-        label = 'Composants électroniques',
-        weight = 100,
-        image = 'electronic_parts.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 30,
-        isUseable = false,
-        description = 'Des composants électroniques divers'
-    },
-
-    ['id_card'] = {
-        name = 'id_card',
-        label = 'Carte d\'identité',
-        weight = 10,
-        image = 'id_card.png',
-        type = 'item',
-        isUnique = true,
-        isUseable = true,
-        closeInventory = false,
-        description = 'Votre carte d\'identité'
-    },
-
-    ['driver_license'] = {
-        name = 'driver_license',
-        label = 'Permis de conduire',
-        weight = 10,
-        image = 'driver_license.png',
-        type = 'item',
-        isUnique = true,
-        isUseable = true,
-        closeInventory = false,
-        description = 'Votre permis de conduire'
-    },
-
-    ['weapon_license'] = {
-        name = 'weapon_license',
-        label = 'Permis de port d\'arme',
-        weight = 10,
-        image = 'weapon_license.png',
-        type = 'item',
-        isUnique = true,
-        isUseable = true,
-        closeInventory = false,
-        description = 'Votre permis de port d\'arme'
-    },
-
-    ['pistol'] = {
-        name = 'pistol',
-        label = 'Pistolet',
-        weight = 1000,
-        image = 'pistol.png',
-        type = 'weapon',
-        isUnique = true,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Un pistolet semi-automatique'
-    },
-
-    ['pistol_ammo'] = {
-        name = 'pistol_ammo',
-        label = 'Munitions pistolet',
+    ['bandage'] = {
+        name = 'bandage',
+        label = 'Bandage',
         weight = 50,
-        image = 'pistol_ammo.png',
+        image = 'bandage.png',
         type = 'item',
-        isUnique = false,
-        stackLimits = 250,
-        isUseable = false,
-        description = 'Des munitions pour pistolet'
-    },
-
-    ['taser'] = {
-        name = 'taser',
-        label = 'Taser',
-        weight = 500,
-        image = 'taser.png',
-        type = 'weapon',
-        isUnique = true,
+        stackLimits = 20,
         isUseable = true,
         closeInventory = true,
-        description = 'Un taser',
-        job = { 'police' }
+        description = 'A bandage to heal minor wounds'
     },
-
-    ['handcuffs'] = {
-        name = 'handcuffs',
-        label = 'Menottes',
-        weight = 200,
-        image = 'handcuffs.png',
-        type = 'item',
-        isUnique = false,
-        stackLimits = 5,
-        isUseable = true,
-        closeInventory = true,
-        description = 'Des menottes',
-        job = { 'police' }
-    }
 }

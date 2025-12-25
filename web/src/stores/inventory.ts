@@ -3,12 +3,15 @@ import { defineStore } from 'pinia'
 import type { ItemDefinition } from '@/types/item'
 import type { InventorySlot } from '@/services/InventoryService'
 import * as InventoryService from '@/services/InventoryService'
+import * as WeightService from '@/services/WeightService'
 import { isUnique } from '@/services/ItemService'
 import { useHotbarStore } from './hotbar'
+import { useItemDefinitionsStore } from './itemDefinitions'
 
 export const useInventoryStore = defineStore('inventory', () => {
   const slots = ref<InventorySlot[]>([])
   const maxSlots = ref(0)
+  const maxWeight = ref(40000)
   const selectedSlotIndex = ref<number | null>(null)
   const hoveredSlotIndex = ref<number | null>(null)
 
@@ -20,8 +23,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     return slots.value.filter((slot) => slot === null).length
   })
 
-  function initSlots(count: number): void {
+  function initSlots(count: number, weight?: number): void {
     maxSlots.value = count
+    if (weight) maxWeight.value = weight
     slots.value = Array(count).fill(null)
   }
 
@@ -79,9 +83,72 @@ export const useInventoryStore = defineStore('inventory', () => {
     return slots.value[index] ?? null
   }
 
+  function setSlot(index: number, item: { name: string; count: number; metadata?: Record<string, unknown> } | null): void {
+    if (index < 0 || index >= slots.value.length) return
+
+    if (item === null) {
+      slots.value[index] = null
+    } else {
+      slots.value[index] = {
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        name: item.name,
+        quantity: item.count,
+        metadata: item.metadata
+      }
+    }
+  }
+
+  function updateSlot(index: number, item: { name: string; count: number; metadata?: Record<string, unknown> }): void {
+    if (index < 0 || index >= slots.value.length) return
+
+    const existingSlot = slots.value[index]
+    if (existingSlot) {
+      existingSlot.quantity = item.count
+      if (item.metadata) {
+        existingSlot.metadata = item.metadata
+      }
+    }
+  }
+
+  function setMaxSlots(count: number): boolean {
+    const currentLength = slots.value.length
+
+    if (count < currentLength) {
+      const slotsToRemove = slots.value.slice(count)
+      const hasItems = slotsToRemove.some((slot) => slot !== null)
+
+      if (hasItems) {
+        return false
+      }
+
+      slots.value = slots.value.slice(0, count)
+    } else if (count > currentLength) {
+      slots.value = [...slots.value, ...Array(count - currentLength).fill(null)]
+    }
+
+    maxSlots.value = count
+    return true
+  }
+
+  function setMaxWeight(weight: number): boolean {
+    const itemDefinitionsStore = useItemDefinitionsStore()
+    const totalWeight = WeightService.getTotalWeight(
+      slots.value,
+      (name) => itemDefinitionsStore.getDefinition(name)
+    )
+
+    if (weight < totalWeight) {
+      return false
+    }
+
+    maxWeight.value = weight
+    return true
+  }
+
   return {
     slots,
     maxSlots,
+    maxWeight,
     selectedSlotIndex,
     hoveredSlotIndex,
     filledSlotsCount,
@@ -96,6 +163,10 @@ export const useInventoryStore = defineStore('inventory', () => {
     mergeStacks,
     selectSlot,
     hoverSlot,
-    getSlot
+    getSlot,
+    setSlot,
+    updateSlot,
+    setMaxSlots,
+    setMaxWeight
   }
 })
