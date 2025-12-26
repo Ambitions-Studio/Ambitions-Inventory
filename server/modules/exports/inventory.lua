@@ -1,3 +1,6 @@
+--- Retrieves inventory data for a player from the cache
+---@param sessionId number The player's session ID
+---@return table? inventoryData Table containing items, maxSlots and maxWeight or nil
 local function getInventoryDataFromSession(sessionId)
     if not sessionId then
         return nil
@@ -25,6 +28,9 @@ local function getInventoryDataFromSession(sessionId)
     }
 end
 
+--- Calculates the total weight of all items in a table
+---@param items table The items table to calculate weight for
+---@return number totalWeight The total weight of all items
 local function getTotalWeight(items)
     local totalWeight = 0
 
@@ -40,6 +46,10 @@ local function getTotalWeight(items)
     return totalWeight
 end
 
+--- Checks if an item exists in an items table
+---@param items table The items table to search
+---@param itemName string The item name to find
+---@return boolean exists Whether the item exists in the table
 local function hasItemInTable(items, itemName)
     for _, itemData in pairs(items) do
         if itemData and itemData.name == itemName then
@@ -49,6 +59,11 @@ local function hasItemInTable(items, itemName)
     return false
 end
 
+--- Finds the first available slot in the inventory
+---@param items table The current items table
+---@param maxSlots number Maximum number of slots
+---@param slotsAlreadyUsed? table Slots to exclude from search
+---@return number? slot The first available slot or nil if full
 local function getFirstAvailableSlot(items, maxSlots, slotsAlreadyUsed)
     for i = 1, maxSlots do
         local alreadyUsed = false
@@ -67,12 +82,19 @@ local function getFirstAvailableSlot(items, maxSlots, slotsAlreadyUsed)
     return nil
 end
 
+--- Checks if a table is empty or nil
+---@param t any The value to check
+---@return boolean isEmpty Whether the table is empty or nil
 local function isEmptyTable(t)
     if t == nil then return true end
     if type(t) ~= 'table' then return false end
     return next(t) == nil
 end
 
+--- Compares two metadata tables for equality
+---@param meta1 table? First metadata table
+---@param meta2 table? Second metadata table
+---@return boolean equal Whether the metadata tables are equal
 local function areMetadataEqual(meta1, meta2)
     local empty1 = isEmptyTable(meta1)
     local empty2 = isEmptyTable(meta2)
@@ -104,6 +126,12 @@ local function areMetadataEqual(meta1, meta2)
     return true
 end
 
+--- Checks if a player can carry a specific item considering weight, slots and stacking rules
+---@param sessionId number The player's session ID
+---@param itemName string The name of the item to check
+---@param count? number The quantity to check (defaults to 1)
+---@return boolean success Whether the player can carry the item
+---@return string? reason Error message if cannot carry
 local function CanCarryItem(sessionId, itemName, count)
     if not sessionId or not itemName then
         return false, 'Invalid parameters'
@@ -194,6 +222,15 @@ local function CanCarryItem(sessionId, itemName, count)
     return true
 end
 
+--- Adds an item to a player's inventory with automatic slot selection and stacking
+---@param sessionId number The player's session ID
+---@param itemName string The name of the item to add
+---@param count? number The quantity to add (defaults to 1)
+---@param slot? number Specific slot to add item to (optional)
+---@param metadata? table Item metadata (items with metadata never stack)
+---@return boolean success Whether the item was added
+---@return number|table|string|nil slotsOrReason Slot(s) used or error message
+---@return table? changes List of inventory changes applied
 local function AddItem(sessionId, itemName, count, slot, metadata)
     count = count or 1
 
@@ -327,6 +364,11 @@ local function AddItem(sessionId, itemName, count, slot, metadata)
     return true, slotsUsed, changes
 end
 
+--- Checks if a player has a specific item and returns all occurrences
+---@param sessionId number The player's session ID
+---@param itemName string The name of the item to check
+---@return boolean hasItem Whether the player has the item
+---@return table? occurrences List of slots containing the item with count and metadata
 local function HasItem(sessionId, itemName)
     if not sessionId or not itemName then
         return false
@@ -357,6 +399,16 @@ local function HasItem(sessionId, itemName)
     return true, occurrences
 end
 
+--- Removes an item from a player's inventory
+---@param sessionId number The player's session ID
+---@param itemName string The name of the item to remove
+---@param count? number The quantity to remove (nil removes all matching items)
+---@param slot? number Specific slot to remove from (optional)
+---@param metadata? table Match items with specific metadata only
+---@return boolean success Whether the item was removed
+---@return number|string countOrReason Amount removed or error message
+---@return table? slotsAffected List of affected slots
+---@return table? changes List of inventory changes applied
 local function RemoveItem(sessionId, itemName, count, slot, metadata)
     if not sessionId or not itemName then
         return false, 'Invalid parameters'

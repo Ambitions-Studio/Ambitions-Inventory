@@ -1,9 +1,14 @@
 local UsableItems = {}
 
+--- Returns the complete list of all item definitions
+---@return table items All item definitions indexed by name
 local function GetItemList()
     return Items or {}
 end
 
+--- Gets the display label for an item
+---@param itemName string The name of the item
+---@return string? label The item's display label or nil if not found
 local function GetItemLabel(itemName)
     if not itemName then
         return nil
@@ -17,6 +22,11 @@ local function GetItemLabel(itemName)
     return item.label
 end
 
+--- Registers an item as usable with a callback function
+---@param itemName string The name of the item to make usable
+---@param callback function The callback executed when item is used (receives sessionId, item)
+---@return boolean success Whether the item was registered
+---@return string? reason Error message if registration failed
 local function CreateUsableItem(itemName, callback)
     if not itemName then
         return false, 'Invalid item name'
@@ -74,7 +84,7 @@ amb.callback.register('inventory:useItem', function(sessionId, slot)
         metadata = slotData.metadata or {}
     }
 
-    local success, err = pcall(callback, sessionId, item)
+    local success = pcall(callback, sessionId, item)
     if not success then
         return false, 'Error using item'
     end
