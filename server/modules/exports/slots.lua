@@ -68,7 +68,7 @@ function SetMaxSlots(sessionId, slots)
 
     inventoryManager.setMaxSlots(slots)
 
-    TriggerClientEvent('ambitions-inventory:updateMaxSlots', sessionId, slots)
+    TriggerClientEvent('ambitions-inventory:client:updateMaxSlots', sessionId, slots)
 
     return true
 end

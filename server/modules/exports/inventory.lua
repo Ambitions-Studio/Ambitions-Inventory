@@ -274,7 +274,7 @@ function AddItem(sessionId, itemName, count, slot, metadata)
             }
         })
 
-        TriggerEvent('Ambitions:inventory:applyChanges', sessionId, changes)
+        TriggerEvent('ambitions:server:applyChanges', sessionId, changes)
         return true, targetSlot, changes
     end
 
@@ -360,7 +360,7 @@ function AddItem(sessionId, itemName, count, slot, metadata)
         return false, 'Inventory full (partial add: ' .. (count - remaining) .. '/' .. count .. ')'
     end
 
-    TriggerEvent('Ambitions:inventory:applyChanges', sessionId, changes)
+    TriggerEvent('ambitions:server:applyChanges', sessionId, changes)
     return true, slotsUsed, changes
 end
 
@@ -474,7 +474,7 @@ function RemoveItem(sessionId, itemName, count, slot, metadata)
             })
         end
 
-        TriggerEvent('Ambitions:inventory:applyChanges', sessionId, changes)
+        TriggerEvent('ambitions:server:applyChanges', sessionId, changes)
         return true, removeCount, changes
     end
 
@@ -542,7 +542,7 @@ function RemoveItem(sessionId, itemName, count, slot, metadata)
         table.insert(slotsAffected, slotIndex)
     end
 
-    TriggerEvent('Ambitions:inventory:applyChanges', sessionId, changes)
+    TriggerEvent('ambitions:server:applyChanges', sessionId, changes)
     return true, removeCount, slotsAffected, changes
 end
 

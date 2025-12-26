@@ -1,4 +1,4 @@
-RegisterNetEvent('ambitions-inventory:loadInventory', function(data)
+RegisterNetEvent('ambitions-inventory:client:loadInventory', function(data)
     SendNUIMessage({
         action = 'loadInventory',
         maxSlots = data.maxSlots,
@@ -14,21 +14,21 @@ RegisterNUICallback('getInventoryConfig', function(_, cb)
     })
 end)
 
-RegisterNetEvent('ambitions-inventory:updateMaxSlots', function(slots)
+RegisterNetEvent('ambitions-inventory:client:updateMaxSlots', function(slots)
     SendNUIMessage({
         action = 'updateMaxSlots',
         slots = slots
     })
 end)
 
-RegisterNetEvent('ambitions-inventory:updateMaxWeight', function(weight)
+RegisterNetEvent('ambitions-inventory:client:updateMaxWeight', function(weight)
     SendNUIMessage({
         action = 'updateMaxWeight',
         weight = weight
     })
 end)
 
-RegisterNetEvent('ambitions-inventory:addItem', function(slot, itemData)
+RegisterNetEvent('ambitions-inventory:client:addItem', function(slot, itemData)
     SendNUIMessage({
         action = 'addItem',
         slot = slot,
@@ -36,7 +36,7 @@ RegisterNetEvent('ambitions-inventory:addItem', function(slot, itemData)
     })
 end)
 
-RegisterNetEvent('ambitions-inventory:updateItem', function(slot, itemData)
+RegisterNetEvent('ambitions-inventory:client:updateItem', function(slot, itemData)
     SendNUIMessage({
         action = 'updateItem',
         slot = slot,
@@ -44,7 +44,7 @@ RegisterNetEvent('ambitions-inventory:updateItem', function(slot, itemData)
     })
 end)
 
-RegisterNetEvent('ambitions-inventory:removeItem', function(slot)
+RegisterNetEvent('ambitions-inventory:client:removeItem', function(slot)
     SendNUIMessage({
         action = 'removeItem',
         slot = slot
@@ -62,12 +62,12 @@ RegisterNUICallback('weightReductionBlocked', function(_, cb)
 end)
 
 RegisterNUICallback('inventorySwapSlots', function(data, cb)
-    TriggerServerEvent('Ambitions:inventory:swapSlots', data.fromSlot, data.toSlot)
+    TriggerServerEvent('ambitions:server:swapSlots', data.fromSlot, data.toSlot)
     cb('ok')
 end)
 
 RegisterNUICallback('inventoryMergeItems', function(data, cb)
-    TriggerServerEvent('Ambitions:inventory:mergeItems', data.fromSlot, data.toSlot)
+    TriggerServerEvent('ambitions:server:mergeItems', data.fromSlot, data.toSlot)
     cb('ok')
 end)
 

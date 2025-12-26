@@ -82,7 +82,7 @@ function SetMaxWeight(sessionId, weight)
 
     inventoryManager.setMaxWeight(weight)
 
-    TriggerClientEvent('ambitions-inventory:updateMaxWeight', sessionId, weight)
+    TriggerClientEvent('ambitions-inventory:client:updateMaxWeight', sessionId, weight)
 
     return true
 end
