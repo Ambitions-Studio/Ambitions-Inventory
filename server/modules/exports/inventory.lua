@@ -1,4 +1,4 @@
-local function getInventoryManagerFromSession(sessionId)
+local function getInventoryDataFromSession(sessionId)
     if not sessionId then
         return nil
     end
@@ -13,17 +13,19 @@ local function getInventoryManagerFromSession(sessionId)
         return nil
     end
 
-    amb.print.debug('[getInventoryManagerFromSession] amb.cache address: ' .. tostring(amb.cache))
-    amb.print.debug('[getInventoryManagerFromSession] sessionId: ' .. tostring(sessionId))
-    amb.print.debug('[getInventoryManagerFromSession] player address: ' .. tostring(player))
-    amb.print.debug('[getInventoryManagerFromSession] character address: ' .. tostring(character))
-    amb.print.debug('[getInventoryManagerFromSession] character uniqueId: ' .. tostring(character.getUniqueId()))
+    local inventoryManager = character.getInventoryManager()
+    if not inventoryManager then
+        return nil
+    end
 
-    return character.getInventoryManager()
+    return {
+        items = inventoryManager.getItems(),
+        maxSlots = inventoryManager.getMaxSlots(),
+        maxWeight = inventoryManager.getMaxWeight()
+    }
 end
 
-local function getTotalWeight(inventoryManager)
-    local items = inventoryManager.getItems()
+local function getTotalWeight(items)
     local totalWeight = 0
 
     for _, itemData in pairs(items) do
@@ -38,8 +40,7 @@ local function getTotalWeight(inventoryManager)
     return totalWeight
 end
 
-local function hasItem(inventoryManager, itemName)
-    local items = inventoryManager.getItems()
+local function hasItemInTable(items, itemName)
     for _, itemData in pairs(items) do
         if itemData and itemData.name == itemName then
             return true
@@ -48,16 +49,21 @@ local function hasItem(inventoryManager, itemName)
     return false
 end
 
-local function getFirstAvailableSlot(inventoryManager)
-    local items = inventoryManager.getItems()
-    local maxSlots = inventoryManager.getMaxSlots()
-
+local function getFirstAvailableSlot(items, maxSlots, slotsAlreadyUsed)
     for i = 1, maxSlots do
-        if not items[i] then
+        local alreadyUsed = false
+        if slotsAlreadyUsed then
+            for _, usedSlot in ipairs(slotsAlreadyUsed) do
+                if usedSlot == i then
+                    alreadyUsed = true
+                    break
+                end
+            end
+        end
+        if not items[i] and not alreadyUsed then
             return i
         end
     end
-
     return nil
 end
 
@@ -113,51 +119,54 @@ local function AddItem(sessionId, itemName, count, slot, metadata)
         return false, 'Invalid count'
     end
 
-    local inventoryManager = getInventoryManagerFromSession(sessionId)
-    if not inventoryManager then
+    local inventoryData = getInventoryDataFromSession(sessionId)
+    if not inventoryData then
         return false, 'Player not found'
     end
 
-    local items = inventoryManager.getItems()
-    local maxSlots = inventoryManager.getMaxSlots()
-
-    amb.print.debug('[AddItem DEBUG] Items table address: ' .. tostring(items))
+    local items = inventoryData.items
+    local maxSlots = inventoryData.maxSlots
+    local maxWeight = inventoryData.maxWeight
 
     local itemWeight = itemDef.weight * count
-    local currentWeight = getTotalWeight(inventoryManager)
-    local maxWeight = inventoryManager.getMaxWeight()
+    local currentWeight = getTotalWeight(items)
 
     if currentWeight + itemWeight > maxWeight then
         return false, 'Inventory too heavy'
     end
 
+    local changes = {}
+    local slotsUsed = {}
+    local remaining = count
+    local stackLimit = itemDef.stackLimits or false
+    local newMeta = metadata or {}
+
     if itemDef.isUnique then
-        if hasItem(inventoryManager, itemName) then
+        if hasItemInTable(items, itemName) then
             return false, 'Unique item already exists'
         end
 
-        local targetSlot = slot
-        if targetSlot then
-            if items[targetSlot] then
-                return false, 'Slot already occupied'
-            end
-        else
-            targetSlot = getFirstAvailableSlot(inventoryManager)
-            if not targetSlot then
-                return false, 'Inventory full'
-            end
+        local targetSlot = slot or getFirstAvailableSlot(items, maxSlots)
+        if not targetSlot then
+            return false, 'Inventory full'
         end
 
-        local itemData = {
-            name = itemName,
-            count = 1,
-            metadata = metadata or {}
-        }
+        if items[targetSlot] then
+            return false, 'Slot already occupied'
+        end
 
-        items[targetSlot] = itemData
-        TriggerClientEvent('ambitions-inventory:addItem', sessionId, targetSlot, itemData)
+        table.insert(changes, {
+            action = 'set',
+            slot = targetSlot,
+            data = {
+                name = itemName,
+                count = 1,
+                metadata = newMeta
+            }
+        })
 
-        return true, targetSlot
+        TriggerEvent('Ambitions:inventory:applyChanges', sessionId, changes)
+        return true, targetSlot, changes
     end
 
     if slot then
@@ -165,34 +174,24 @@ local function AddItem(sessionId, itemName, count, slot, metadata)
             return false, 'Slot already occupied'
         end
 
-        local stackLimit = itemDef.stackLimits or false
-        local toAdd = count
-        if stackLimit and count > stackLimit then
+        local toAdd = remaining
+        if stackLimit and remaining > stackLimit then
             toAdd = stackLimit
         end
 
-        local itemData = {
-            name = itemName,
-            count = toAdd,
-            metadata = metadata or {}
-        }
+        table.insert(changes, {
+            action = 'set',
+            slot = slot,
+            data = {
+                name = itemName,
+                count = toAdd,
+                metadata = newMeta
+            }
+        })
 
-        items[slot] = itemData
-        TriggerClientEvent('ambitions-inventory:addItem', sessionId, slot, itemData)
-
-        local remaining = count - toAdd
-        if remaining > 0 then
-            return AddItem(sessionId, itemName, remaining, nil, metadata)
-        end
-
-        return true, slot
+        table.insert(slotsUsed, slot)
+        remaining = remaining - toAdd
     end
-
-    local remaining = count
-    local stackLimit = itemDef.stackLimits or false
-    local slotsUsed = {}
-
-    local newMeta = metadata or {}
 
     for i = 1, maxSlots do
         if remaining <= 0 then break end
@@ -200,26 +199,31 @@ local function AddItem(sessionId, itemName, count, slot, metadata)
         local slotData = items[i]
         if slotData and slotData.name == itemName and areMetadataEqual(slotData.metadata, newMeta) then
             local currentCount = slotData.count
-            local canAdd = 0
+            local canAdd = remaining
 
             if stackLimit then
-                canAdd = stackLimit - currentCount
-            else
-                canAdd = remaining
+                canAdd = math.min(remaining, stackLimit - currentCount)
             end
 
             if canAdd > 0 then
-                local toAdd = math.min(canAdd, remaining)
-                slotData.count = currentCount + toAdd
-                remaining = remaining - toAdd
+                table.insert(changes, {
+                    action = 'update',
+                    slot = i,
+                    data = {
+                        name = itemName,
+                        count = currentCount + canAdd,
+                        metadata = slotData.metadata
+                    }
+                })
+
+                remaining = remaining - canAdd
                 table.insert(slotsUsed, i)
-                TriggerClientEvent('ambitions-inventory:updateSlot', sessionId, i, slotData)
             end
         end
     end
 
     while remaining > 0 do
-        local emptySlot = getFirstAvailableSlot(inventoryManager)
+        local emptySlot = getFirstAvailableSlot(items, maxSlots, slotsUsed)
         if not emptySlot then
             break
         end
@@ -229,23 +233,26 @@ local function AddItem(sessionId, itemName, count, slot, metadata)
             toAdd = stackLimit
         end
 
-        local itemData = {
-            name = itemName,
-            count = toAdd,
-            metadata = metadata or {}
-        }
+        table.insert(changes, {
+            action = 'set',
+            slot = emptySlot,
+            data = {
+                name = itemName,
+                count = toAdd,
+                metadata = newMeta
+            }
+        })
 
-        items[emptySlot] = itemData
         remaining = remaining - toAdd
         table.insert(slotsUsed, emptySlot)
-        TriggerClientEvent('ambitions-inventory:addItem', sessionId, emptySlot, itemData)
     end
 
     if remaining > 0 then
         return false, 'Inventory full (partial add: ' .. (count - remaining) .. '/' .. count .. ')'
     end
 
-    return true, slotsUsed
+    TriggerEvent('Ambitions:inventory:applyChanges', sessionId, changes)
+    return true, slotsUsed, changes
 end
 
 local function HasItem(sessionId, itemName)
@@ -253,12 +260,12 @@ local function HasItem(sessionId, itemName)
         return false
     end
 
-    local inventoryManager = getInventoryManagerFromSession(sessionId)
-    if not inventoryManager then
+    local inventoryData = getInventoryDataFromSession(sessionId)
+    if not inventoryData then
         return false
     end
 
-    local items = inventoryManager.getItems()
+    local items = inventoryData.items
     local occurrences = {}
 
     for slot, itemData in pairs(items) do
@@ -292,16 +299,18 @@ local function RemoveItem(sessionId, itemName, count, slot, metadata)
         return false, 'Item does not exist'
     end
 
-    local inventoryManager = getInventoryManagerFromSession(sessionId)
-    if not inventoryManager then
+    local inventoryData = getInventoryDataFromSession(sessionId)
+    if not inventoryData then
         return false, 'Player not found'
     end
 
-    local items = inventoryManager.getItems()
+    local items = inventoryData.items
 
-    if not hasItem(inventoryManager, itemName) then
+    if not hasItemInTable(items, itemName) then
         return false, 'Player does not have this item'
     end
+
+    local changes = {}
 
     if slot then
         local slotData = items[slot]
@@ -325,14 +334,24 @@ local function RemoveItem(sessionId, itemName, count, slot, metadata)
 
         local newCount = slotData.count - removeCount
         if newCount <= 0 then
-            items[slot] = nil
-            TriggerClientEvent('ambitions-inventory:removeSlot', sessionId, slot)
+            table.insert(changes, {
+                action = 'remove',
+                slot = slot
+            })
         else
-            slotData.count = newCount
-            TriggerClientEvent('ambitions-inventory:updateSlot', sessionId, slot, slotData)
+            table.insert(changes, {
+                action = 'update',
+                slot = slot,
+                data = {
+                    name = itemName,
+                    count = newCount,
+                    metadata = slotData.metadata
+                }
+            })
         end
 
-        return true, removeCount
+        TriggerEvent('Ambitions:inventory:applyChanges', sessionId, changes)
+        return true, removeCount, changes
     end
 
     local matchingSlots = {}
@@ -379,18 +398,28 @@ local function RemoveItem(sessionId, itemName, count, slot, metadata)
 
         local newCount = slotData.count - toRemove
         if newCount <= 0 then
-            items[slotIndex] = nil
-            TriggerClientEvent('ambitions-inventory:removeSlot', sessionId, slotIndex)
+            table.insert(changes, {
+                action = 'remove',
+                slot = slotIndex
+            })
         else
-            slotData.count = newCount
-            TriggerClientEvent('ambitions-inventory:updateSlot', sessionId, slotIndex, slotData)
+            table.insert(changes, {
+                action = 'update',
+                slot = slotIndex,
+                data = {
+                    name = itemName,
+                    count = newCount,
+                    metadata = slotData.metadata
+                }
+            })
         end
 
         remaining = remaining - toRemove
         table.insert(slotsAffected, slotIndex)
     end
 
-    return true, removeCount, slotsAffected
+    TriggerEvent('Ambitions:inventory:applyChanges', sessionId, changes)
+    return true, removeCount, slotsAffected, changes
 end
 
 exports('AddItem', AddItem)

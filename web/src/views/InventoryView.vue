@@ -253,10 +253,10 @@ onMounted(async () => {
     if (event.data.action === 'addItem') {
       inventoryStore.setSlot(event.data.slot - 1, event.data.item)
     }
-    if (event.data.action === 'updateSlot') {
+    if (event.data.action === 'updateItem') {
       inventoryStore.updateSlot(event.data.slot - 1, event.data.item)
     }
-    if (event.data.action === 'removeSlot') {
+    if (event.data.action === 'removeItem') {
       inventoryStore.setSlot(event.data.slot - 1, null)
     }
     if (event.data.action === 'loadInventory') {

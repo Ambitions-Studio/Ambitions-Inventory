@@ -36,17 +36,17 @@ RegisterNetEvent('ambitions-inventory:addItem', function(slot, itemData)
     })
 end)
 
-RegisterNetEvent('ambitions-inventory:updateSlot', function(slot, itemData)
+RegisterNetEvent('ambitions-inventory:updateItem', function(slot, itemData)
     SendNUIMessage({
-        action = 'updateSlot',
+        action = 'updateItem',
         slot = slot,
         item = itemData
     })
 end)
 
-RegisterNetEvent('ambitions-inventory:removeSlot', function(slot)
+RegisterNetEvent('ambitions-inventory:removeItem', function(slot)
     SendNUIMessage({
-        action = 'removeSlot',
+        action = 'removeItem',
         slot = slot
     })
 end)
