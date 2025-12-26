@@ -61,6 +61,16 @@ RegisterNUICallback('weightReductionBlocked', function(_, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('inventorySwapSlots', function(data, cb)
+    TriggerServerEvent('Ambitions:inventory:swapSlots', data.fromSlot, data.toSlot)
+    cb('ok')
+end)
+
+RegisterNUICallback('inventoryMergeItems', function(data, cb)
+    TriggerServerEvent('Ambitions:inventory:mergeItems', data.fromSlot, data.toSlot)
+    cb('ok')
+end)
+
 RegisterNUICallback('getItemDefinitions', function(_, cb)
     local itemCount = 0
     for _ in pairs(Items) do

@@ -142,11 +142,23 @@ const handleDrop = (result: DropResult) => {
   if (fromSlot && toSlot && fromSlot.name === toSlot.name) {
     toSlot.quantity += fromSlot.quantity
     fromStore.slots[result.fromIndex] = null
+    if (result.fromSource === 'inventory') {
+      sendNuiCallback('inventoryMergeItems', {
+        fromSlot: result.fromIndex + 1,
+        toSlot: result.toIndex + 1
+      })
+    }
     return
   }
 
   if (result.fromSource === result.toSource) {
     fromStore.swapSlots(result.fromIndex, result.toIndex)
+    if (result.fromSource === 'inventory') {
+      sendNuiCallback('inventorySwapSlots', {
+        fromSlot: result.fromIndex + 1,
+        toSlot: result.toIndex + 1
+      })
+    }
   } else {
     fromStore.slots[result.fromIndex] = toSlot ?? null
     toStore.slots[result.toIndex] = fromSlot ?? null
