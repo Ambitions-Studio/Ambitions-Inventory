@@ -71,6 +71,14 @@ RegisterNUICallback('inventoryMergeItems', function(data, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('useItem', function(data, cb)
+    local success, err = amb.callback.await('inventory:useItem', false, data.slotIndex + 1)
+    if not success then
+        amb.ShowNotification('Inventory', err, 'error', 3000, 'top-right')
+    end
+    cb('ok')
+end)
+
 RegisterNUICallback('getItemDefinitions', function(_, cb)
     local itemCount = 0
     for _ in pairs(Items) do

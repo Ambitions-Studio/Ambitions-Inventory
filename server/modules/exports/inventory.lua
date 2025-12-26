@@ -104,7 +104,7 @@ local function areMetadataEqual(meta1, meta2)
     return true
 end
 
-local function AddItem(sessionId, itemName, count, slot, metadata)
+local function CanCarryItem(sessionId, itemName, count)
     if not sessionId or not itemName then
         return false, 'Invalid parameters'
     end
@@ -134,6 +134,78 @@ local function AddItem(sessionId, itemName, count, slot, metadata)
     if currentWeight + itemWeight > maxWeight then
         return false, 'Inventory too heavy'
     end
+
+    if itemDef.isUnique then
+        if hasItemInTable(items, itemName) then
+            return false, 'Unique item already exists'
+        end
+
+        local targetSlot = getFirstAvailableSlot(items, maxSlots)
+        if not targetSlot then
+            return false, 'Inventory full'
+        end
+
+        return true
+    end
+
+    local remaining = count
+    local stackLimit = itemDef.stackLimits or false
+    local slotsUsed = {}
+    local emptyMeta = {}
+
+    for i = 1, maxSlots do
+        if remaining <= 0 then break end
+
+        local slotData = items[i]
+        if slotData and slotData.name == itemName and areMetadataEqual(slotData.metadata, emptyMeta) then
+            local currentCount = slotData.count
+            local canAdd = remaining
+
+            if stackLimit then
+                canAdd = math.min(remaining, stackLimit - currentCount)
+            end
+
+            if canAdd > 0 then
+                remaining = remaining - canAdd
+                table.insert(slotsUsed, i)
+            end
+        end
+    end
+
+    while remaining > 0 do
+        local emptySlot = getFirstAvailableSlot(items, maxSlots, slotsUsed)
+        if not emptySlot then
+            break
+        end
+
+        local toAdd = remaining
+        if stackLimit and remaining > stackLimit then
+            toAdd = stackLimit
+        end
+
+        remaining = remaining - toAdd
+        table.insert(slotsUsed, emptySlot)
+    end
+
+    if remaining > 0 then
+        return false, 'Inventory full (can only carry ' .. (count - remaining) .. '/' .. count .. ')'
+    end
+
+    return true
+end
+
+local function AddItem(sessionId, itemName, count, slot, metadata)
+    count = count or 1
+
+    local canCarry, reason = CanCarryItem(sessionId, itemName, count)
+    if not canCarry then
+        return false, reason
+    end
+
+    local itemDef = Items[itemName]
+    local inventoryData = getInventoryDataFromSession(sessionId)
+    local items = inventoryData.items
+    local maxSlots = inventoryData.maxSlots
 
     local changes = {}
     local slotsUsed = {}
@@ -422,6 +494,7 @@ local function RemoveItem(sessionId, itemName, count, slot, metadata)
     return true, removeCount, slotsAffected, changes
 end
 
+exports('CanCarryItem', CanCarryItem)
 exports('AddItem', AddItem)
 exports('HasItem', HasItem)
 exports('RemoveItem', RemoveItem)
