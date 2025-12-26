@@ -132,7 +132,7 @@ end
 ---@param count? number The quantity to check (defaults to 1)
 ---@return boolean success Whether the player can carry the item
 ---@return string? reason Error message if cannot carry
-local function CanCarryItem(sessionId, itemName, count)
+function CanCarryItem(sessionId, itemName, count)
     if not sessionId or not itemName then
         return false, 'Invalid parameters'
     end
@@ -231,7 +231,7 @@ end
 ---@return boolean success Whether the item was added
 ---@return number|table|string|nil slotsOrReason Slot(s) used or error message
 ---@return table? changes List of inventory changes applied
-local function AddItem(sessionId, itemName, count, slot, metadata)
+function AddItem(sessionId, itemName, count, slot, metadata)
     count = count or 1
 
     local canCarry, reason = CanCarryItem(sessionId, itemName, count)
@@ -369,7 +369,7 @@ end
 ---@param itemName string The name of the item to check
 ---@return boolean hasItem Whether the player has the item
 ---@return table? occurrences List of slots containing the item with count and metadata
-local function HasItem(sessionId, itemName)
+function HasItem(sessionId, itemName)
     if not sessionId or not itemName then
         return false
     end
@@ -409,7 +409,7 @@ end
 ---@return number|string countOrReason Amount removed or error message
 ---@return table? slotsAffected List of affected slots
 ---@return table? changes List of inventory changes applied
-local function RemoveItem(sessionId, itemName, count, slot, metadata)
+function RemoveItem(sessionId, itemName, count, slot, metadata)
     if not sessionId or not itemName then
         return false, 'Invalid parameters'
     end

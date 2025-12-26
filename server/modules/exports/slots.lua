@@ -1,13 +1,13 @@
 --- Returns the default maximum slots from config
 ---@return number maxSlots The default maximum slots
-local function GetDefaultMaxSlots()
+function GetDefaultMaxSlots()
     return InventoryConfig.playerInventory.slotsNumber
 end
 
 --- Gets the maximum slots for a player's inventory
 ---@param sessionId number The player's session ID
 ---@return number? maxSlots The player's max slots or nil if not found
-local function GetPlayerMaxSlots(sessionId)
+function GetPlayerMaxSlots(sessionId)
     if not sessionId then
         return nil
     end
@@ -35,7 +35,7 @@ end
 ---@param slots number The new maximum slots value
 ---@return boolean success Whether the operation succeeded
 ---@return string? reason Error message if failed
-local function SetMaxSlots(sessionId, slots)
+function SetMaxSlots(sessionId, slots)
     if not sessionId or not slots then
         return false, 'Invalid parameters'
     end

@@ -1,7 +1,7 @@
 --- Retrieves complete inventory data for a player
 ---@param sessionId number The player's session ID
 ---@return table? inventory Table with inventoryId, characterId, maxSlots, maxWeight, items or nil
-local function GetPlayerInventory(sessionId)
+function GetPlayerInventory(sessionId)
     if not sessionId then
         return nil
     end

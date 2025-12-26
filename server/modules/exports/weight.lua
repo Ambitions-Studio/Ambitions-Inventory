@@ -1,13 +1,13 @@
 --- Returns the default maximum weight from config
 ---@return number maxWeight The default maximum weight
-local function GetDefaultMaxWeight()
+function GetDefaultMaxWeight()
     return InventoryConfig.playerInventory.maxWeight
 end
 
 --- Gets the maximum weight for a player's inventory
 ---@param sessionId number The player's session ID
 ---@return number? maxWeight The player's max weight or nil if not found
-local function GetPlayerMaxWeight(sessionId)
+function GetPlayerMaxWeight(sessionId)
     if not sessionId then
         return nil
     end
@@ -54,7 +54,7 @@ end
 ---@param weight number The new maximum weight value
 ---@return boolean success Whether the operation succeeded
 ---@return string? reason Error message if failed
-local function SetMaxWeight(sessionId, weight)
+function SetMaxWeight(sessionId, weight)
     if not sessionId or not weight then
         return false, 'Invalid parameters'
     end
