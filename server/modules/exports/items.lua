@@ -52,6 +52,8 @@ amb.callback.register('inventory:useItem', function(sessionId, slot)
         return false, 'Invalid parameters'
     end
 
+    slot = tonumber(slot)
+
     local player = amb.cache.getPlayer(sessionId)
     if not player then
         return false, 'Player not found'
