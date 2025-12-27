@@ -32,7 +32,16 @@ function CreateUsableItem(itemName, callback)
         return false, 'Invalid item name'
     end
 
-    if type(callback) ~= 'function' then
+    print(('[DEBUG] CreateUsableItem received - itemName: %s, callback type: %s, callback value: %s'):format(
+        tostring(itemName),
+        type(callback),
+        tostring(callback)
+    ))
+
+    local callbackType = type(callback)
+    local isCallable = callbackType == 'function' or (callbackType == 'table' and getmetatable(callback) and getmetatable(callback).__call)
+
+    if not isCallable and callbackType ~= 'userdata' then
         return false, 'Invalid callback'
     end
 
