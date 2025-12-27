@@ -24,7 +24,7 @@ end
 
 --- Registers an item as usable with a callback function
 ---@param itemName string The name of the item to make usable
----@param callback function The callback executed when item is used (receives sessionId, item)
+---@param callback function|table The callback executed when item is used (receives sessionId, item). Tables are accepted as FiveM converts functions to callable tables when passed via exports.
 ---@return boolean success Whether the item was registered
 ---@return string? reason Error message if registration failed
 function CreateUsableItem(itemName, callback)
@@ -32,17 +32,11 @@ function CreateUsableItem(itemName, callback)
         return false, 'Invalid item name'
     end
 
-    print(('[DEBUG] CreateUsableItem received - itemName: %s, callback type: %s, callback value: %s'):format(
-        tostring(itemName),
-        type(callback),
-        tostring(callback)
-    ))
-
     local callbackType = type(callback)
-    local isCallable = callbackType == 'function' or (callbackType == 'table' and getmetatable(callback) and getmetatable(callback).__call)
+    local isCallable = callbackType == 'function' or callbackType == 'table'
 
-    if not isCallable and callbackType ~= 'userdata' then
-        return false, 'Invalid callback'
+    if not isCallable then
+        return false, 'Invalid callback: must be a function or function reference'
     end
 
     if not Items[itemName] then
@@ -93,8 +87,9 @@ amb.callback.register('inventory:useItem', function(sessionId, slot)
         metadata = slotData.metadata or {}
     }
 
-    local success = pcall(callback, sessionId, item)
+    local success, err = pcall(callback, sessionId, item)
     if not success then
+        amb.print.error(('Error using item %s: %s'):format(slotData.name, tostring(err)))
         return false, 'Error using item'
     end
 
