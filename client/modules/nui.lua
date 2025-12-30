@@ -72,7 +72,7 @@ RegisterNUICallback('inventoryMergeItems', function(data, cb)
 end)
 
 RegisterNUICallback('useItem', function(data, cb)
-    local success, err = amb.callback.await('inventory:useItem', false, data.slotIndex + 1)
+    local success, err = amb.callback.await('inventory:useItem', false, data.slotIndex)
     if not success then
         amb.ShowNotification('Inventory', err, 'error', 3000, 'top-right')
     end

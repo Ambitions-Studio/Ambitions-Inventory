@@ -16,7 +16,7 @@ const clientHeight = ref(1)
 
 const currentWeight = computed(() => {
   return WeightService.getTotalWeight(
-    groundStore.slots,
+    groundStore.slotsArray,
     (name) => itemDefinitionsStore.getDefinition(name)
   )
 })
@@ -45,7 +45,7 @@ const updateScroll = () => {
 }
 
 const getDefinition = (slotIndex: number) => {
-  const slot = groundStore.slots[slotIndex]
+  const slot = groundStore.getSlot(slotIndex)
   if (!slot) return undefined
   return itemDefinitionsStore.getDefinition(slot.name)
 }
@@ -73,11 +73,11 @@ onMounted(() => {
         </div>
         <div class="grid grid-cols-5 gap-2.5">
           <InventorySlot
-            v-for="(slotData, index) in groundStore.slots"
-            :key="index"
-            :slot-index="index"
-            :slot-data="slotData"
-            :definition="getDefinition(index)"
+            v-for="slot in groundStore.slotIndices"
+            :key="slot"
+            :slot-index="slot"
+            :slot-data="groundStore.getSlot(slot)"
+            :definition="getDefinition(slot)"
             source="ground"
           />
         </div>

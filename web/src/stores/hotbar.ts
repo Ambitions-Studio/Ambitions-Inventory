@@ -8,54 +8,105 @@ import { useItemDefinitionsStore } from './itemDefinitions'
 const HOTBAR_SLOTS = 5
 
 export const useHotbarStore = defineStore('hotbar', () => {
-  const slots = ref<InventorySlot[]>(Array(HOTBAR_SLOTS).fill(null))
+  const slots = ref<Record<number, InventorySlot>>({})
   const selectedSlotIndex = ref<number | null>(null)
 
   const maxSlots = computed(() => HOTBAR_SLOTS)
 
-  const filledSlotsCount = computed(() => {
-    return slots.value.filter((slot) => slot !== null).length
+  const slotIndices = computed(() => {
+    return Array.from({ length: HOTBAR_SLOTS }, (_, i) => i + 1)
   })
 
+  const slotsArray = computed((): InventorySlot[] => {
+    const arr: InventorySlot[] = []
+    for (let i = 1; i <= HOTBAR_SLOTS; i++) {
+      arr.push(slots.value[i] ?? null)
+    }
+    return arr
+  })
+
+  const filledSlotsCount = computed(() => {
+    let count = 0
+    for (let i = 1; i <= HOTBAR_SLOTS; i++) {
+      if (slots.value[i]) count++
+    }
+    return count
+  })
+
+  function hasItem(itemName: string): boolean {
+    for (let i = 1; i <= HOTBAR_SLOTS; i++) {
+      const slot = slots.value[i]
+      if (slot && slot.name === itemName) return true
+    }
+    return false
+  }
+
   function initSlots(): void {
-    slots.value = Array(HOTBAR_SLOTS).fill(null)
+    slots.value = {}
   }
 
   function setSlots(newSlots: InventorySlot[]): void {
-    slots.value = newSlots.slice(0, HOTBAR_SLOTS)
+    slots.value = {}
+    for (let i = 0; i < Math.min(newSlots.length, HOTBAR_SLOTS); i++) {
+      const item = newSlots[i]
+      if (item) {
+        slots.value[i + 1] = item
+      }
+    }
+  }
+
+  function setSlot(slot: number, item: InventorySlot): void {
+    if (slot < 1 || slot > HOTBAR_SLOTS) return
+    if (item === null) {
+      delete slots.value[slot]
+    } else {
+      slots.value[slot] = item
+    }
   }
 
   function clear(): void {
-    slots.value = Array(HOTBAR_SLOTS).fill(null)
+    slots.value = {}
     selectedSlotIndex.value = null
   }
 
+  function findEmptySlot(): number | null {
+    for (let i = 1; i <= HOTBAR_SLOTS; i++) {
+      if (!slots.value[i]) return i
+    }
+    return null
+  }
+
   function assignFromInventory(
-    inventorySlotIndex: number,
+    inventorySlot: number,
     hotbarSlotIndex: number,
     quantity: number
   ): boolean {
     const inventoryStore = useInventoryStore()
     const itemDefinitionsStore = useItemDefinitionsStore()
 
-    const sourceSlot = inventoryStore.slots[inventorySlotIndex]
+    const sourceSlot = inventoryStore.getSlot(inventorySlot)
     if (!sourceSlot) return false
 
     const definition = itemDefinitionsStore.getDefinition(sourceSlot.name)
     if (!definition) return false
 
     const result = HotbarService.assignFromInventory(
-      inventoryStore.slots,
-      inventorySlotIndex,
-      slots.value,
-      hotbarSlotIndex,
+      inventoryStore.slotsArray,
+      inventorySlot - 1,
+      slotsArray.value,
+      hotbarSlotIndex - 1,
       quantity,
       definition
     )
 
     if (result.success) {
-      inventoryStore.setSlots(result.inventorySlots)
-      slots.value = result.hotbarSlots
+      for (let i = 0; i < result.inventorySlots.length; i++) {
+        const slot = result.inventorySlots[i]
+        inventoryStore.setSlot(i + 1, slot ? { name: slot.name, count: slot.quantity, metadata: slot.metadata } : null)
+      }
+      for (let i = 0; i < result.hotbarSlots.length; i++) {
+        setSlot(i + 1, result.hotbarSlots[i] ?? null)
+      }
     }
 
     return result.success
@@ -72,33 +123,43 @@ export const useHotbarStore = defineStore('hotbar', () => {
     if (!definition) return false
 
     const result = HotbarService.returnToInventory(
-      slots.value,
-      hotbarSlotIndex,
-      inventoryStore.slots,
+      slotsArray.value,
+      hotbarSlotIndex - 1,
+      inventoryStore.slotsArray,
       quantity,
       definition
     )
 
     if (result.success) {
-      inventoryStore.setSlots(result.inventorySlots)
-      slots.value = result.hotbarSlots
+      for (let i = 0; i < result.inventorySlots.length; i++) {
+        const slot = result.inventorySlots[i]
+        inventoryStore.setSlot(i + 1, slot ? { name: slot.name, count: slot.quantity, metadata: slot.metadata } : null)
+      }
+      for (let i = 0; i < result.hotbarSlots.length; i++) {
+        setSlot(i + 1, result.hotbarSlots[i] ?? null)
+      }
     }
 
     return result.success
   }
 
   function consume(hotbarSlotIndex: number, quantity: number): boolean {
-    const result = HotbarService.consumeFromHotbar(slots.value, hotbarSlotIndex, quantity)
+    const result = HotbarService.consumeFromHotbar(slotsArray.value, hotbarSlotIndex - 1, quantity)
 
     if (result.success) {
-      slots.value = result.hotbarSlots
+      for (let i = 0; i < result.hotbarSlots.length; i++) {
+        setSlot(i + 1, result.hotbarSlots[i] ?? null)
+      }
     }
 
     return result.success
   }
 
   function swapSlots(fromIndex: number, toIndex: number): void {
-    slots.value = HotbarService.swapHotbarSlots(slots.value, fromIndex, toIndex)
+    const fromSlot = slots.value[fromIndex] ?? null
+    const toSlot = slots.value[toIndex] ?? null
+    setSlot(fromIndex, toSlot)
+    setSlot(toIndex, fromSlot)
   }
 
   function clearSlot(hotbarSlotIndex: number): boolean {
@@ -114,15 +175,20 @@ export const useHotbarStore = defineStore('hotbar', () => {
     if (!definition) return false
 
     const result = HotbarService.clearHotbarSlot(
-      slots.value,
-      hotbarSlotIndex,
-      inventoryStore.slots,
+      slotsArray.value,
+      hotbarSlotIndex - 1,
+      inventoryStore.slotsArray,
       definition
     )
 
     if (result.success) {
-      inventoryStore.setSlots(result.inventorySlots)
-      slots.value = result.hotbarSlots
+      for (let i = 0; i < result.inventorySlots.length; i++) {
+        const slot = result.inventorySlots[i]
+        inventoryStore.setSlot(i + 1, slot ? { name: slot.name, count: slot.quantity, metadata: slot.metadata } : null)
+      }
+      for (let i = 0; i < result.hotbarSlots.length; i++) {
+        setSlot(i + 1, result.hotbarSlots[i] ?? null)
+      }
     }
 
     return result.success
@@ -139,11 +205,16 @@ export const useHotbarStore = defineStore('hotbar', () => {
   return {
     slots,
     maxSlots,
+    slotIndices,
+    slotsArray,
     selectedSlotIndex,
     filledSlotsCount,
+    hasItem,
     initSlots,
     setSlots,
+    setSlot,
     clear,
+    findEmptySlot,
     assignFromInventory,
     returnToInventory,
     consume,

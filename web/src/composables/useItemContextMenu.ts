@@ -53,16 +53,6 @@ export function useItemContextMenu() {
   const groundStore = useGroundStore()
   const isDevelopment = import.meta.env.DEV
 
-  const getStoreForSource = (source: DragSource) => {
-    switch (source) {
-      case 'inventory': return inventoryStore
-      case 'hotbar': return hotbarStore
-      case 'ground': return groundStore
-      case 'equipment':
-        throw new Error('Equipment source not supported in context menu actions')
-    }
-  }
-
   const currentDefinition = computed(() => {
     if (!currentItemName.value) return undefined
     return itemDefinitionsStore.getDefinition(currentItemName.value)
@@ -170,12 +160,15 @@ export function useItemContextMenu() {
         const slotData = currentSlotData.value
 
         if (isDevelopment && slotData) {
-          const sourceStore = getStoreForSource(source)
-          const emptyGroundIndex = groundStore.slots.findIndex(slot => slot === null)
+          const emptyGroundSlot = groundStore.findEmptySlot()
 
-          if (emptyGroundIndex !== -1) {
-            groundStore.slots[emptyGroundIndex] = slotData
-            sourceStore.slots[slotIndex] = null
+          if (emptyGroundSlot !== null) {
+            groundStore.setSlot(emptyGroundSlot, slotData)
+            if (source === 'inventory') {
+              inventoryStore.setSlot(slotIndex, null)
+            } else if (source === 'hotbar') {
+              hotbarStore.setSlot(slotIndex, null)
+            }
           }
         } else {
           sendNuiCallback('dropItem', { slotIndex, source })
@@ -237,10 +230,21 @@ export function useItemContextMenu() {
     activeModal.value = 'none'
 
     if (isDevelopment) {
-      const store = getStoreForSource(source)
-      const slot = store.slots[slotIndex]
-      if (slot) {
-        slot.metadata = { ...slot.metadata, customLabel: newLabel }
+      if (source === 'inventory') {
+        const slot = inventoryStore.getSlot(slotIndex)
+        if (slot) {
+          inventoryStore.setSlot(slotIndex, { name: slot.name, count: slot.quantity, metadata: { ...slot.metadata, customLabel: newLabel } })
+        }
+      } else if (source === 'hotbar') {
+        const slot = hotbarStore.getSlot(slotIndex)
+        if (slot) {
+          hotbarStore.setSlot(slotIndex, { ...slot, metadata: { ...slot.metadata, customLabel: newLabel } })
+        }
+      } else if (source === 'ground') {
+        const slot = groundStore.getSlot(slotIndex)
+        if (slot) {
+          groundStore.setSlot(slotIndex, { ...slot, metadata: { ...slot.metadata, customLabel: newLabel } })
+        }
       }
     } else {
       await sendNuiCallback('renameItem', { slotIndex, source, newLabel })
@@ -263,14 +267,32 @@ export function useItemContextMenu() {
     activeModal.value = 'none'
 
     if (isDevelopment) {
-      const store = getStoreForSource(source)
-      const slot = store.slots[slotIndex]
-
-      if (slot) {
-        if (quantity >= slot.quantity) {
-          store.slots[slotIndex] = null
-        } else {
-          slot.quantity = slot.quantity - quantity
+      if (source === 'inventory') {
+        const slot = inventoryStore.getSlot(slotIndex)
+        if (slot) {
+          if (quantity >= slot.quantity) {
+            inventoryStore.setSlot(slotIndex, null)
+          } else {
+            inventoryStore.setSlot(slotIndex, { name: slot.name, count: slot.quantity - quantity, metadata: slot.metadata })
+          }
+        }
+      } else if (source === 'hotbar') {
+        const slot = hotbarStore.getSlot(slotIndex)
+        if (slot) {
+          if (quantity >= slot.quantity) {
+            hotbarStore.setSlot(slotIndex, null)
+          } else {
+            hotbarStore.setSlot(slotIndex, { ...slot, quantity: slot.quantity - quantity })
+          }
+        }
+      } else if (source === 'ground') {
+        const slot = groundStore.getSlot(slotIndex)
+        if (slot) {
+          if (quantity >= slot.quantity) {
+            groundStore.setSlot(slotIndex, null)
+          } else {
+            groundStore.setSlot(slotIndex, { ...slot, quantity: slot.quantity - quantity })
+          }
         }
       }
 
@@ -299,19 +321,34 @@ export function useItemContextMenu() {
     activeModal.value = 'none'
 
     if (isDevelopment) {
-      const store = getStoreForSource(source)
-      const slot = store.slots[slotIndex]
-
-      if (slot && slot.quantity > quantity) {
-        const emptyIndex = store.slots.findIndex(s => s === null)
-
-        if (emptyIndex !== -1) {
-          slot.quantity = slot.quantity - quantity
-          store.slots[emptyIndex] = {
-            id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-            name: slotData.name,
-            quantity: quantity,
-            metadata: slotData.metadata ? { ...slotData.metadata } : undefined
+      if (source === 'inventory') {
+        inventoryStore.splitStack(slotIndex, quantity)
+      } else if (source === 'hotbar') {
+        const slot = hotbarStore.getSlot(slotIndex)
+        if (slot && slot.quantity > quantity) {
+          const emptySlot = hotbarStore.findEmptySlot()
+          if (emptySlot !== null) {
+            hotbarStore.setSlot(slotIndex, { ...slot, quantity: slot.quantity - quantity })
+            hotbarStore.setSlot(emptySlot, {
+              id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+              name: slotData.name,
+              quantity: quantity,
+              metadata: slotData.metadata ? { ...slotData.metadata } : undefined
+            })
+          }
+        }
+      } else if (source === 'ground') {
+        const slot = groundStore.getSlot(slotIndex)
+        if (slot && slot.quantity > quantity) {
+          const emptySlot = groundStore.findEmptySlot()
+          if (emptySlot !== null) {
+            groundStore.setSlot(slotIndex, { ...slot, quantity: slot.quantity - quantity })
+            groundStore.setSlot(emptySlot, {
+              id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+              name: slotData.name,
+              quantity: quantity,
+              metadata: slotData.metadata ? { ...slotData.metadata } : undefined
+            })
           }
         }
       }

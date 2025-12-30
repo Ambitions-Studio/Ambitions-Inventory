@@ -19,6 +19,7 @@ import { useHotbarStore } from '@/stores/hotbar'
 import { useGroundStore } from '@/stores/ground'
 import { useEquipmentStore } from '@/stores/equipment'
 import { useDragAndDrop, type DropResult } from '@/composables/useDragAndDrop'
+import type { InventorySlot } from '@/services/InventoryService'
 import { useItemContextMenu } from '@/composables/useItemContextMenu'
 import { MOCK_CLOTHING_ITEMS } from '@/mocks/equipment'
 import { isClothingMetadata } from '@/types/equipment'
@@ -111,11 +112,11 @@ const backgroundStyle = computed(() => {
   }
 })
 
-const getStoreForSource = (source: string) => {
+const getSlotData = (source: string, slot: number): InventorySlot => {
   switch (source) {
-    case 'inventory': return inventoryStore
-    case 'hotbar': return hotbarStore
-    case 'ground': return groundStore
+    case 'inventory': return inventoryStore.getSlot(slot)
+    case 'hotbar': return hotbarStore.getSlot(slot)
+    case 'ground': return groundStore.getSlot(slot)
     default: return null
   }
 }
@@ -131,45 +132,64 @@ const handleDrop = (result: DropResult) => {
     return
   }
 
-  const fromStore = getStoreForSource(result.fromSource)
-  const toStore = getStoreForSource(result.toSource)
-
-  if (!fromStore || !toStore) return
-
-  const fromSlot = fromStore.slots[result.fromIndex]
-  const toSlot = toStore.slots[result.toIndex]
+  const fromSlot = getSlotData(result.fromSource, result.fromIndex)
+  const toSlot = getSlotData(result.toSource, result.toIndex)
 
   if (fromSlot && toSlot && fromSlot.name === toSlot.name) {
-    toSlot.quantity += fromSlot.quantity
-    fromStore.slots[result.fromIndex] = null
+    if (result.toSource === 'inventory') {
+      const existing = inventoryStore.getSlot(result.toIndex)
+      if (existing) {
+        inventoryStore.setSlot(result.toIndex, { name: existing.name, count: existing.quantity + fromSlot.quantity, metadata: existing.metadata })
+      }
+    } else if (result.toSource === 'hotbar') {
+      const existing = hotbarStore.getSlot(result.toIndex)
+      if (existing) hotbarStore.setSlot(result.toIndex, { ...existing, quantity: existing.quantity + fromSlot.quantity })
+    } else if (result.toSource === 'ground') {
+      const existing = groundStore.getSlot(result.toIndex)
+      if (existing) groundStore.setSlot(result.toIndex, { ...existing, quantity: existing.quantity + fromSlot.quantity })
+    }
+
     if (result.fromSource === 'inventory') {
-      sendNuiCallback('inventoryMergeItems', {
-        fromSlot: result.fromIndex + 1,
-        toSlot: result.toIndex + 1
-      })
+      inventoryStore.setSlot(result.fromIndex, null)
+      sendNuiCallback('inventoryMergeItems', { fromSlot: result.fromIndex, toSlot: result.toIndex })
+    } else if (result.fromSource === 'hotbar') {
+      hotbarStore.setSlot(result.fromIndex, null)
+    } else if (result.fromSource === 'ground') {
+      groundStore.setSlot(result.fromIndex, null)
     }
     return
   }
 
   if (result.fromSource === result.toSource) {
-    fromStore.swapSlots(result.fromIndex, result.toIndex)
     if (result.fromSource === 'inventory') {
-      sendNuiCallback('inventorySwapSlots', {
-        fromSlot: result.fromIndex + 1,
-        toSlot: result.toIndex + 1
-      })
+      inventoryStore.swapSlots(result.fromIndex, result.toIndex)
+      sendNuiCallback('inventorySwapSlots', { fromSlot: result.fromIndex, toSlot: result.toIndex })
+    } else if (result.fromSource === 'hotbar') {
+      hotbarStore.swapSlots(result.fromIndex, result.toIndex)
+    } else if (result.fromSource === 'ground') {
+      groundStore.swapSlots(result.fromIndex, result.toIndex)
     }
   } else {
-    fromStore.slots[result.fromIndex] = toSlot ?? null
-    toStore.slots[result.toIndex] = fromSlot ?? null
+    if (result.fromSource === 'inventory') {
+      inventoryStore.setSlot(result.fromIndex, toSlot ? { name: toSlot.name, count: toSlot.quantity, metadata: toSlot.metadata } : null)
+    } else if (result.fromSource === 'hotbar') {
+      hotbarStore.setSlot(result.fromIndex, toSlot ?? null)
+    } else if (result.fromSource === 'ground') {
+      groundStore.setSlot(result.fromIndex, toSlot ?? null)
+    }
+
+    if (result.toSource === 'inventory') {
+      inventoryStore.setSlot(result.toIndex, fromSlot ? { name: fromSlot.name, count: fromSlot.quantity, metadata: fromSlot.metadata } : null)
+    } else if (result.toSource === 'hotbar') {
+      hotbarStore.setSlot(result.toIndex, fromSlot ?? null)
+    } else if (result.toSource === 'ground') {
+      groundStore.setSlot(result.toIndex, fromSlot ?? null)
+    }
   }
 }
 
 const handleDropToEquipment = (result: DropResult) => {
-  const fromStore = getStoreForSource(result.fromSource)
-  if (!fromStore) return
-
-  const fromSlot = fromStore.slots[result.fromIndex]
+  const fromSlot = getSlotData(result.fromSource, result.fromIndex)
   if (!fromSlot || !fromSlot.metadata) return
 
   if (!isClothingMetadata(fromSlot.metadata)) return
@@ -191,7 +211,13 @@ const handleDropToEquipment = (result: DropResult) => {
   const { result: equipResult } = equipmentStore.equip(item, targetSlotId, true)
 
   if (equipResult.success) {
-    fromStore.slots[result.fromIndex] = null
+    if (result.fromSource === 'inventory') {
+      inventoryStore.setSlot(result.fromIndex, null)
+    } else if (result.fromSource === 'hotbar') {
+      hotbarStore.setSlot(result.fromIndex, null)
+    } else if (result.fromSource === 'ground') {
+      groundStore.setSlot(result.fromIndex, null)
+    }
 
     if (currentEquipped) {
       const definition = {
@@ -208,9 +234,6 @@ const handleDropToEquipment = (result: DropResult) => {
 }
 
 const handleDropFromEquipment = (result: DropResult) => {
-  const toStore = getStoreForSource(result.toSource)
-  if (!toStore) return
-
   const fromSlotId = INDEX_TO_SLOT[result.fromIndex]
   if (!fromSlotId) return
 
@@ -220,24 +243,44 @@ const handleDropFromEquipment = (result: DropResult) => {
   const { result: unequipResult } = equipmentStore.unequip(fromSlotId)
 
   if (unequipResult.success) {
-    const toSlot = toStore.slots[result.toIndex]
+    const toSlot = getSlotData(result.toSource, result.toIndex)
+    const itemData = {
+      name: equippedItem.name,
+      count: 1,
+      metadata: equippedItem.metadata as unknown as Record<string, unknown>,
+    }
+
+    const slotItem = {
+      id: equippedItem.id,
+      name: equippedItem.name,
+      quantity: 1,
+      metadata: equippedItem.metadata as unknown as Record<string, unknown>,
+    }
 
     if (toSlot) {
-      const emptyIndex = toStore.slots.findIndex((s: unknown) => s === null)
-      if (emptyIndex !== -1) {
-        toStore.slots[emptyIndex] = {
-          id: equippedItem.id,
-          name: equippedItem.name,
-          quantity: 1,
-          metadata: equippedItem.metadata as unknown as Record<string, unknown>,
+      if (result.toSource === 'inventory') {
+        const emptySlot = inventoryStore.findEmptySlot()
+        if (emptySlot !== null) {
+          inventoryStore.setSlot(emptySlot, itemData)
+        }
+      } else if (result.toSource === 'hotbar') {
+        const emptySlot = hotbarStore.findEmptySlot()
+        if (emptySlot !== null) {
+          hotbarStore.setSlot(emptySlot, slotItem)
+        }
+      } else if (result.toSource === 'ground') {
+        const emptySlot = groundStore.findEmptySlot()
+        if (emptySlot !== null) {
+          groundStore.setSlot(emptySlot, slotItem)
         }
       }
     } else {
-      toStore.slots[result.toIndex] = {
-        id: equippedItem.id,
-        name: equippedItem.name,
-        quantity: 1,
-        metadata: equippedItem.metadata as unknown as Record<string, unknown>,
+      if (result.toSource === 'inventory') {
+        inventoryStore.setSlot(result.toIndex, itemData)
+      } else if (result.toSource === 'hotbar') {
+        hotbarStore.setSlot(result.toIndex, slotItem)
+      } else if (result.toSource === 'ground') {
+        groundStore.setSlot(result.toIndex, slotItem)
       }
     }
   }
@@ -263,21 +306,21 @@ onMounted(async () => {
       }
     }
     if (event.data.action === 'addItem') {
-      inventoryStore.setSlot(event.data.slot - 1, event.data.item)
+      inventoryStore.setSlot(event.data.slot, event.data.item)
     }
     if (event.data.action === 'updateItem') {
-      inventoryStore.updateSlot(event.data.slot - 1, event.data.item)
+      inventoryStore.updateSlot(event.data.slot, event.data.item)
     }
     if (event.data.action === 'removeItem') {
-      inventoryStore.setSlot(event.data.slot - 1, null)
+      inventoryStore.setSlot(event.data.slot, null)
     }
     if (event.data.action === 'loadInventory') {
       const { maxSlots, maxWeight, items } = event.data
       inventoryStore.initSlots(maxSlots, maxWeight)
       for (const [slot, item] of Object.entries(items)) {
-        const slotIndex = parseInt(slot) - 1
+        const slotNumber = parseInt(slot)
         if (item) {
-          inventoryStore.setSlot(slotIndex, item as { name: string; count: number; metadata?: Record<string, unknown> })
+          inventoryStore.setSlot(slotNumber, item as { name: string; count: number; metadata?: Record<string, unknown> })
         }
       }
     }

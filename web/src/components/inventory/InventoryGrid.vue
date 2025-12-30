@@ -30,11 +30,11 @@ const clientHeight = ref(1)
 
 const currentWeight = computed(() => {
   const inventoryWeight = WeightService.getTotalWeight(
-    inventoryStore.slots,
+    inventoryStore.slotsArray,
     (name) => itemDefinitionsStore.getDefinition(name)
   )
   const hotbarWeight = WeightService.getTotalWeight(
-    hotbarStore.slots,
+    hotbarStore.slotsArray,
     (name) => itemDefinitionsStore.getDefinition(name)
   )
   return inventoryWeight + hotbarWeight
@@ -69,10 +69,10 @@ const updateScroll = () => {
   clientHeight.value = scrollContainer.value.clientHeight
 }
 
-const getDefinition = (slotIndex: number) => {
-  const slot = inventoryStore.slots[slotIndex]
-  if (!slot) return undefined
-  return itemDefinitionsStore.getDefinition(slot.name)
+const getDefinition = (slot: number) => {
+  const slotData = inventoryStore.getSlot(slot)
+  if (!slotData) return undefined
+  return itemDefinitionsStore.getDefinition(slotData.name)
 }
 
 onMounted(() => {
@@ -103,11 +103,11 @@ onMounted(() => {
         </div>
         <div class="grid grid-cols-5 gap-2.5">
           <InventorySlot
-            v-for="(slotData, index) in inventoryStore.slots"
-            :key="index"
-            :slot-index="index"
-            :slot-data="slotData"
-            :definition="getDefinition(index)"
+            v-for="slot in inventoryStore.slotIndices"
+            :key="slot"
+            :slot-index="slot"
+            :slot-data="inventoryStore.getSlot(slot)"
+            :definition="getDefinition(slot)"
             @hover="handleSlotHover"
           />
         </div>
