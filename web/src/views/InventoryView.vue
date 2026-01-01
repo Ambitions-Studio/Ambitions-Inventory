@@ -317,8 +317,9 @@ onMounted(async () => {
     if (event.data.action === 'loadInventory') {
       const { maxSlots, maxWeight, items } = event.data
       inventoryStore.initSlots(maxSlots, maxWeight)
-      for (const [slot, item] of Object.entries(items)) {
-        const slotNumber = parseInt(slot)
+      const isArray = Array.isArray(items)
+      for (const [index, item] of Object.entries(items)) {
+        const slotNumber = isArray ? parseInt(index) + 1 : parseInt(index)
         if (item) {
           inventoryStore.setSlot(slotNumber, item as { name: string; count: number; metadata?: Record<string, unknown> })
         }
